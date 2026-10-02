@@ -100,15 +100,6 @@ function App() {
     return (sorted[0]?.earnings || 0) > 0 ? sorted[0].id : null
   }, [players])
 
-  const getPlayerInitials = (name: string) => {
-    if (!name) return '?'
-    const parts = name.trim().split(/\s+/)
-    if (parts.length >= 2) {
-      return (parts[0][0] + parts[1][0]).toUpperCase()
-    }
-    return name.slice(0, 2).toUpperCase()
-  }
-
   // Feature #2: TV / Fullscreen Kiosk Mode
   const [isKioskMode, setIsKioskMode] = useState(false)
 
@@ -1986,7 +1977,7 @@ function App() {
                   </div>
                 )}
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', marginTop: '0.25rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', marginTop: '0.25rem' }}>
                   {Object.values(players)
                     .filter(p => {
                       if (playerFilter === 'coming' && p.status !== 'coming') return false
@@ -2016,50 +2007,44 @@ function App() {
                         className={`player-glass-card ${p.status === 'coming' ? 'status-coming' : (p.status === 'out' ? 'status-out' : '')}`}
                         onClick={() => setSelectedH2HPlayerId(p.id)}
                       >
-                        {/* Left: Avatar + Identity + Stats */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 0, flex: 1 }}>
-                          <div className={`player-avatar ${isTop ? 'avatar-gold' : ''}`}>
-                            {getPlayerInitials(p.name)}
+                        {/* Left: Player Identity & Compact Stats */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', minWidth: 0, flex: 1 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', minWidth: 0 }}>
+                            <span style={{ fontWeight: 750, fontSize: '0.975rem', color: '#F8FAFC', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '-0.01em' }}>
+                              {p.name}
+                            </span>
+                            {isTop && (
+                              <span title="High Roller Leader" style={{ fontSize: '0.75rem', flexShrink: 0 }}>👑</span>
+                            )}
                           </div>
 
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', minWidth: 0, flex: 1 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', minWidth: 0 }}>
-                              <span style={{ fontWeight: 800, fontSize: '0.975rem', color: '#F8FAFC', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '-0.01em' }}>
-                                {p.name}
-                              </span>
-                              {isTop && (
-                                <span title="High Roller Leader" style={{ fontSize: '0.75rem', flexShrink: 0 }}>👑</span>
-                              )}
-                            </div>
-
-                            {/* Stat Capsules with Tabular Figures */}
-                            <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                              <span className="stat-capsule" style={{ color: '#F59E0B' }}>
-                                <Trophy size={11} strokeWidth={2.5} /> <span>{p.wins || 0}W</span>
-                              </span>
-                              <span className="stat-capsule" style={{ color: '#10B981' }}>
-                                <Coins size={11} strokeWidth={2.5} /> <span>${p.earnings || 0}</span>
-                              </span>
-                              <span className="stat-capsule" style={{ color: '#38BDF8' }}>
-                                <Percent size={11} strokeWidth={2.5} /> <span>{winPct}%</span>
-                              </span>
-                            </div>
+                          {/* Compact Inline Stats */}
+                          <div style={{ display: 'flex', gap: '0.75rem', fontSize: '0.75rem', alignItems: 'center' }}>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '3px', color: '#F59E0B', fontWeight: 650 }}>
+                              <Trophy size={11} strokeWidth={2.5} /> <span>{p.wins || 0}</span>
+                            </span>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '3px', color: '#10B981', fontWeight: 650 }}>
+                              <Coins size={11} strokeWidth={2.5} /> <span>${p.earnings || 0}</span>
+                            </span>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '3px', color: '#38BDF8', fontWeight: 650 }}>
+                              <Percent size={11} strokeWidth={2.5} /> <span>{winPct}%</span>
+                            </span>
                           </div>
                         </div>
 
                         {/* Right: Attendance Controls & Options */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
                           {isAdmin ? (
                             <>
-                              <div style={{ display: 'flex', background: 'rgba(10, 15, 23, 0.65)', padding: '3px', borderRadius: '0.65rem', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                              <div style={{ display: 'flex', background: 'rgba(10, 15, 23, 0.65)', padding: '2px', borderRadius: '0.5rem', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
                                 <button 
                                   className="btn-ghost" 
                                   title="Mark as Coming"
                                   style={{ 
-                                    padding: '0.35rem 0.55rem', 
+                                    padding: '0.3rem 0.5rem', 
                                     background: p.status === 'coming' ? 'linear-gradient(180deg, #10B981, #059669)' : 'transparent', 
                                     color: p.status === 'coming' ? '#FFFFFF' : 'rgba(16, 185, 129, 0.7)', 
-                                    borderRadius: '0.45rem',
+                                    borderRadius: '0.35rem',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
@@ -2068,16 +2053,16 @@ function App() {
                                   }} 
                                   onClick={() => handleSetStatus(p.id, 'coming')}
                                 >
-                                  <Check size={14} strokeWidth={3} />
+                                  <Check size={13} strokeWidth={3} />
                                 </button>
                                 <button 
                                   className="btn-ghost" 
                                   title="Mark as Out"
                                   style={{ 
-                                    padding: '0.35rem 0.55rem', 
+                                    padding: '0.3rem 0.5rem', 
                                     background: p.status === 'out' ? 'linear-gradient(180deg, #EF4444, #DC2626)' : 'transparent', 
                                     color: p.status === 'out' ? '#FFFFFF' : 'rgba(239, 68, 68, 0.7)', 
-                                    borderRadius: '0.45rem',
+                                    borderRadius: '0.35rem',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
@@ -2086,7 +2071,7 @@ function App() {
                                   }} 
                                   onClick={() => handleSetStatus(p.id, 'out')}
                                 >
-                                  <X size={14} strokeWidth={3} />
+                                  <X size={13} strokeWidth={3} />
                                 </button>
                               </div>
 
@@ -2094,7 +2079,7 @@ function App() {
                                 className="btn-ghost" 
                                 title="Player Options"
                                 style={{ 
-                                  padding: '0.45rem', 
+                                  padding: '0.4rem', 
                                   background: 'rgba(255,255,255,0.05)', 
                                   border: '1px solid rgba(255, 255, 255, 0.12)', 
                                   borderRadius: '50%', 
@@ -2117,11 +2102,11 @@ function App() {
                                 display: 'flex', 
                                 alignItems: 'center', 
                                 gap: '4px',
-                                padding: '0.3rem 0.65rem', 
-                                borderRadius: '0.6rem', 
+                                padding: '0.25rem 0.55rem', 
+                                borderRadius: '0.5rem', 
                                 fontSize: '0.65rem', 
                                 fontWeight: 800, 
-                                letterSpacing: '0.04em',
+                                letterSpacing: '0.03em',
                                 background: p.status === 'coming' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
                                 color: p.status === 'coming' ? '#34D399' : '#F87171',
                                 border: p.status === 'coming' ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(239, 68, 68, 0.3)',
@@ -2129,12 +2114,12 @@ function App() {
                               }}>
                                 {p.status === 'coming' ? (
                                   <>
-                                    <Check size={12} strokeWidth={3} />
+                                    <Check size={11} strokeWidth={3} />
                                     <span>COMING</span>
                                   </>
                                 ) : (
                                   <>
-                                    <X size={12} strokeWidth={3} />
+                                    <X size={11} strokeWidth={3} />
                                     <span>OUT</span>
                                   </>
                                 )}
@@ -2165,17 +2150,14 @@ function App() {
                     onClick={() => setSelectedH2HPlayerId(p.id)} 
                     className="player-glass-card"
                     style={{ 
-                      marginBottom: '0.5rem', 
-                      padding: '0.65rem 0.85rem',
+                      marginBottom: '0.45rem', 
+                      padding: '0.55rem 0.85rem',
                       background: idx === 0 ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(14, 21, 32, 0.8))' : undefined,
                       borderColor: idx === 0 ? 'rgba(245, 158, 11, 0.35)' : undefined
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 0, flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', minWidth: 0, flex: 1 }}>
                       <span className={`payout-badge payout-${idx + 1}`} style={{ flexShrink: 0 }}>#{idx + 1}</span>
-                      <div className="player-avatar" style={{ width: '32px', height: '32px', fontSize: '0.75rem' }}>
-                        {getPlayerInitials(p.name)}
-                      </div>
                       <span style={{ fontWeight: 800, fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0, color: '#F8FAFC' }}>{p.name}</span>
                     </div>
                     <span style={{ color: idx === 0 ? '#FCD34D' : 'var(--primary)', fontWeight: 850, fontVariantNumeric: 'tabular-nums', flexShrink: 0, fontSize: '0.95rem' }}>${p.earnings}</span>
