@@ -13,11 +13,11 @@ export default defineConfig({
         enabled: true
       },
       manifest: {
-        name: 'Putt Night',
-        short_name: 'PuttNight',
-        description: 'Disc Golf Putt Night Scorekeeper',
-        theme_color: '#0f172a',
-        background_color: '#0f172a',
+        name: 'Horny Toad Putt Night',
+        short_name: 'Putt Night',
+        description: 'Horny Toad Putt Night Tournament Manager',
+        theme_color: '#090d12',
+        background_color: '#090d12',
         display: 'standalone',
         icons: [
           {

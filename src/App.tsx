@@ -5,6 +5,7 @@ import { generateBracket, calculatePayouts, getTournamentEntryFee, getTournament
 import type { TournamentConfig, Player, Match } from './logic/tournament'
 import { supabase } from './lib/supabase'
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch'
+import { HornyToadLogo } from './components/HornyToadLogo'
 import './index.css'
 
 const isToday = (timestamp: number) => {
@@ -1442,7 +1443,10 @@ function App() {
                   </div>
 
                   <div className="bracket-center" style={{ minWidth: `${centerWidth}px` }}>
-                    <span className="stat-label" style={{ color: 'var(--accent)', fontWeight: 800, letterSpacing: '0.1em' }}>CHAMPIONSHIP</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', justifyContent: 'center', marginBottom: '0.25rem' }}>
+                      <Trophy size={13} className="accent-text" />
+                      <span className="stat-label" style={{ color: 'var(--accent)', fontWeight: 900, letterSpacing: '0.14em' }}>CHAMPIONSHIP</span>
+                    </div>
                     {centerMatch && <div style={{ width: '100%' }}>{renderMatch(centerMatch, tourney)}</div>}
                     {consolationMatch && (
                       <div style={{ width: '150px', marginTop: '2rem' }}>
@@ -1471,23 +1475,35 @@ function App() {
 
   return (
     <div className="app-container">
+      {view !== 'bracket' && !viewingPastTourney && (
+        <header className="app-header">
+          <HornyToadLogo size={42} showText={true} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <div className={`bracket-admin-badge ${isAdmin ? 'is-admin' : ''}`}>
+              {isAdmin ? <LockOpen size={11} color="#10b981" /> : <LockIcon size={11} style={{ opacity: 0.5 }} />}
+              <span>{isAdmin ? 'ADMIN' : 'VIEW'}</span>
+            </div>
+          </div>
+        </header>
+      )}
+
       <main style={{ paddingBottom: '80px' }}>
         <AnimatePresence mode="wait">
           {view === 'home' && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               {activeTournament && (
-                <div className="card" style={{ border: '1px solid var(--primary)', marginBottom: '1rem', background: 'rgba(16, 185, 129, 0.1)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                        <span style={{ fontSize: '0.65rem', fontWeight: 800, background: 'var(--primary)', color: 'white', padding: '0.1rem 0.4rem', borderRadius: '0.3rem' }}>ACTIVE</span>
-                        <h3 style={{ margin: 0, fontSize: '0.95rem' }}>{getTournamentLabel(activeTournament, allTournamentsList)}</h3>
+                <div className="card" style={{ border: '1px solid rgba(16, 185, 129, 0.4)', marginBottom: '1rem', background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(14, 20, 29, 0.95))' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem' }}>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', minWidth: 0 }}>
+                        <span style={{ fontSize: '0.625rem', fontWeight: 800, background: 'var(--primary)', color: 'white', padding: '0.15rem 0.45rem', borderRadius: '0.35rem', letterSpacing: '0.04em', flexShrink: 0 }}>ACTIVE</span>
+                        <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>{getTournamentLabel(activeTournament, allTournamentsList)}</h3>
                       </div>
-                      <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.7rem', opacity: 0.7 }}>
+                      <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.725rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {activeTournament.config.players.length} Players • ${getTournamentEntryFee(activeTournament.config)} Buy-in • ${activeTournament.config.addedCash} Added
                       </p>
                     </div>
-                    <button className="btn btn-primary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.7rem' }} onClick={handleOpenBracket}>RESUME</button>
+                    <button className="btn btn-primary" style={{ padding: '0.45rem 0.9rem', fontSize: '0.75rem', flexShrink: 0 }} onClick={handleOpenBracket}>RESUME</button>
                   </div>
                 </div>
               )}
@@ -1496,9 +1512,9 @@ function App() {
                 <div className="card-title" style={{ margin: 0 }}><UserPlus size={20} className="accent-text" /> Coming Today ({Object.values(players).filter(p => p.status === 'coming').length})</div>
                 <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '1rem' }}>
                   {Object.values(players).filter(p => p.status === 'coming').sort((a, b) => a.name.localeCompare(b.name)).map(p => (
-                    <span key={p.id} style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '0.2rem 0.6rem', borderRadius: '1rem', fontSize: '0.75rem', fontWeight: 600, border: '1px solid rgba(16, 185, 129, 0.2)' }}>{p.name}</span>
+                    <span key={p.id} style={{ background: 'rgba(16, 185, 129, 0.12)', color: '#34D399', padding: '0.25rem 0.65rem', borderRadius: '1rem', fontSize: '0.75rem', fontWeight: 700, border: '1px solid rgba(16, 185, 129, 0.25)', maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={p.name}>{p.name}</span>
                   ))}
-                  {Object.values(players).filter(p => p.status === 'coming').length === 0 && <p style={{ opacity: 0.5, fontSize: '0.8rem' }}>No players registered for tonight yet.</p>}
+                  {Object.values(players).filter(p => p.status === 'coming').length === 0 && <p style={{ opacity: 0.5, fontSize: '0.8rem', margin: 0 }}>No players registered for tonight yet.</p>}
                 </div>
               </div>
 
@@ -1559,10 +1575,10 @@ function App() {
                               transition: 'all 0.2s'
                             }}
                           >
-                            <span style={{ fontWeight: 600, fontSize: '0.85rem', textDecoration: isPaid ? 'line-through' : 'none' }}>
+                            <span style={{ fontWeight: 600, fontSize: '0.85rem', textDecoration: isPaid ? 'line-through' : 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0, flex: 1, marginRight: '0.5rem' }}>
                               {players[pId]?.name || 'Unknown'}
                             </span>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
                               {isPaid ? (
                                 <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#10b981', background: 'rgba(16, 185, 129, 0.1)', padding: '0.1rem 0.4rem', borderRadius: '0.25rem' }}>
                                   ✓ PAID
@@ -1626,7 +1642,7 @@ function App() {
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                         <label style={{ margin: 0 }}>Select Players ({config.players.length})</label>
                       </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.4rem', maxHeight: '240px', overflowY: 'auto', padding: '0.25rem' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '0.4rem', maxHeight: '240px', overflowY: 'auto', padding: '0.25rem' }}>
                         {Object.values(players).sort((a, b) => a.name.localeCompare(b.name)).map(p => (
                           <button 
                             key={p.id} 
@@ -1909,7 +1925,7 @@ function App() {
                           background: 'var(--bg-card)', 
                           cursor: 'pointer',
                           display: 'grid',
-                          gridTemplateColumns: '1fr auto',
+                          gridTemplateColumns: 'minmax(0, 1fr) auto',
                           alignItems: 'center',
                           gap: '0.75rem',
                           border: p.status === 'coming' ? '1.5px solid #10b981' : (p.status === 'out' ? '1.5px solid #ef4444' : '1px solid var(--glass-border)'),
@@ -1922,13 +1938,13 @@ function App() {
                           <span style={{ fontWeight: 750, fontSize: '1.05rem', color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '-0.01em' }}>{p.name}</span>
                           <div style={{ display: 'flex', gap: '0.75rem', fontSize: '0.75rem', alignItems: 'center' }}>
                             <span style={{ display: 'flex', alignItems: 'center', gap: '3px', color: '#f59e0b', fontWeight: 600 }}>
-                              <Trophy size={12} strokeWidth={2.5} /> <span>{p.wins || 0}</span>
+                              <Trophy size={12} strokeWidth={2.5} /> <span style={{ fontVariantNumeric: 'tabular-nums' }}>{p.wins || 0}</span>
                             </span>
                             <span style={{ display: 'flex', alignItems: 'center', gap: '3px', color: '#10b981', fontWeight: 600 }}>
-                              <Coins size={12} strokeWidth={2.5} /> <span>${p.earnings || 0}</span>
+                              <Coins size={12} strokeWidth={2.5} /> <span style={{ fontVariantNumeric: 'tabular-nums' }}>${p.earnings || 0}</span>
                             </span>
                             <span style={{ display: 'flex', alignItems: 'center', gap: '3px', color: '#3b82f6', fontWeight: 600 }}>
-                              <Percent size={12} strokeWidth={2.5} /> <span>{winPct}%</span>
+                              <Percent size={12} strokeWidth={2.5} /> <span style={{ fontVariantNumeric: 'tabular-nums' }}>{winPct}%</span>
                             </span>
                           </div>
                         </div>
@@ -2034,16 +2050,16 @@ function App() {
           {/* HISTORY VIEW */}
           {view === 'history' && (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-              <h2 className="page-title">History</h2>
+              <h2 className="page-title"><History size={22} className="accent-text" /> Tournament History</h2>
               <div className="card">
                 <div className="card-title"><Trophy size={20} className="accent-text" /> Hall of Fame</div>
                 {Object.values(players).sort((a, b) => b.earnings - a.earnings).slice(0, 5).map((p, idx) => (
-                  <div key={p.id} onClick={() => setSelectedH2HPlayerId(p.id)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', cursor: 'pointer' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                      <span className={`payout-badge payout-${idx + 1}`}>{idx + 1}</span>
-                      <span style={{ fontWeight: 600 }}>{p.name}</span>
+                  <div key={p.id} onClick={() => setSelectedH2HPlayerId(p.id)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', cursor: 'pointer', gap: '0.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 0, flex: 1 }}>
+                      <span className={`payout-badge payout-${idx + 1}`} style={{ flexShrink: 0 }}>{idx + 1}</span>
+                      <span style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{p.name}</span>
                     </div>
-                    <span style={{ color: 'var(--primary)', fontWeight: 800 }}>${p.earnings}</span>
+                    <span style={{ color: 'var(--primary)', fontWeight: 800, fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>${p.earnings}</span>
                   </div>
                 ))}
               </div>
@@ -2062,20 +2078,20 @@ function App() {
                       <div 
                         key={t.id} 
                         className="card" 
-                        style={{ padding: '0.85rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', margin: 0, background: 'rgba(255,255,255,0.03)' }} 
+                        style={{ padding: '0.85rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', margin: 0, background: 'rgba(255,255,255,0.03)', gap: '0.5rem' }} 
                         onClick={() => setViewingPastTourney(t)}
                       >
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                             {label}
                           </div>
-                          <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: '0.2rem' }}>
-                            {t.config.players.length} Players • ${fee} Entry • Total Pot: ${pot}
+                          <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: '0.2rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {t.config.players.length} Players • ${fee} Entry • Pot: ${pot}
                             {winnerName && <span style={{ color: 'var(--accent)', marginLeft: '0.5rem', fontWeight: 600 }}>🏆 {winnerName}</span>}
                           </div>
                         </div>
 
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }} onClick={e => e.stopPropagation()}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
                           {isAdmin && (
                             <>
                               <button 
@@ -2118,7 +2134,7 @@ function App() {
           {/* SETTINGS VIEW */}
           {view === 'settings' && (
              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-               <h2 className="page-title">Config</h2>
+               <h2 className="page-title"><Settings2 size={22} className="accent-text" /> Settings & Configuration</h2>
                {isAdmin ? (
                  <>
                    <div className="card">
@@ -3120,25 +3136,25 @@ function App() {
       <AnimatePresence>
         {showFinishSummary && (
           <motion.div className="modal-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <motion.div className="modal-content" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} style={{ textAlign: 'center', padding: '2rem' }}>
-              <div style={{ marginBottom: '1.5rem' }}>
-                <Trophy size={64} className="accent-text" style={{ margin: '0 auto' }} />
+            <motion.div className="modal-content" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} style={{ textAlign: 'center', padding: '2rem', border: '1.5px solid var(--accent)', boxShadow: '0 0 30px rgba(245, 158, 11, 0.25), 0 25px 50px rgba(0,0,0,0.8)' }}>
+              <div style={{ marginBottom: '1.25rem' }}>
+                <Trophy size={64} className="accent-text" style={{ margin: '0 auto', filter: 'drop-shadow(0 0 16px rgba(245, 158, 11, 0.5))' }} />
               </div>
-              <h2 style={{ marginBottom: '0.5rem' }}>Tournament Complete!</h2>
-              <div style={{ fontSize: '1.5rem', fontWeight: 900, marginBottom: '1rem' }}>{showFinishSummary.winner}</div>
-              <p style={{ opacity: 0.7, marginBottom: '2rem' }}>Total Payout: <span style={{ color: 'var(--accent)', fontWeight: 800 }}>${showFinishSummary.payout}</span></p>
-              <button className="btn btn-primary" style={{ width: '100%' }} onClick={() => setShowFinishSummary(null)}>CLOSE</button>
+              <h2 style={{ marginBottom: '0.5rem', fontWeight: 800, letterSpacing: '-0.01em' }}>Tournament Complete!</h2>
+              <div style={{ fontSize: '1.5rem', fontWeight: 900, marginBottom: '0.75rem', color: '#F8FAFC', wordBreak: 'break-word', overflowWrap: 'break-word' }}>{showFinishSummary.winner}</div>
+              <p style={{ opacity: 0.8, marginBottom: '1.75rem', fontSize: '1rem' }}>Total Payout: <span style={{ color: 'var(--accent)', fontWeight: 800, fontSize: '1.25rem', fontVariantNumeric: 'tabular-nums' }}>${showFinishSummary.payout}</span></p>
+              <button className="btn btn-primary" style={{ width: '100%', padding: '0.85rem' }} onClick={() => setShowFinishSummary(null)}>CLOSE</button>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {!isKioskMode && (
+      {!isKioskMode && view !== 'bracket' && !viewingPastTourney && (
         <nav className="nav">
-          <div className={`nav-item ${view === 'home' || view === 'bracket' ? 'active' : ''}`} onClick={handleGoHome}><Swords size={22} /><span>Bracket</span></div>
-          <div className={`nav-item ${view === 'players' ? 'active' : ''}`} onClick={() => { haptic(); setView('players'); }}><User size={22} /><span>Players</span></div>
-          <div className={`nav-item ${view === 'history' ? 'active' : ''}`} onClick={() => { haptic(); setView('history'); fetchData(); }}><History size={22} /><span>History</span></div>
-          <div className={`nav-item ${view === 'settings' ? 'active' : ''}`} onClick={() => { haptic(); setView('settings'); }}><Settings2 size={22} /><span>Config</span></div>
+          <div className={`nav-item ${view === 'home' ? 'active' : ''}`} onClick={handleGoHome}><Swords size={20} /><span>Bracket</span></div>
+          <div className={`nav-item ${view === 'players' ? 'active' : ''}`} onClick={() => { haptic(); setView('players'); }}><User size={20} /><span>Players</span></div>
+          <div className={`nav-item ${view === 'history' ? 'active' : ''}`} onClick={() => { haptic(); setView('history'); fetchData(); }}><History size={20} /><span>History</span></div>
+          <div className={`nav-item ${view === 'settings' ? 'active' : ''}`} onClick={() => { haptic(); setView('settings'); }}><Settings2 size={20} /><span>Config</span></div>
         </nav>
       )}
 
