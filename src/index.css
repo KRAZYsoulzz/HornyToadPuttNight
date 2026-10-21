@@ -39,8 +39,8 @@ body {
 /* Worn-Wood Rail Top Bar */
 .app-header {
   background: var(--wood-rail-pattern);
-  border-bottom: 2px solid #140d08;
-  box-shadow: inset 0 -1px 0 rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.06), 0 4px 12px rgba(0,0,0,0.7);
+  border-bottom: 2px solid var(--wood-rail-border);
+  box-shadow: var(--wood-rail-shadow);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -72,6 +72,11 @@ body {
 .neon-glow {
   color: var(--neon-amber);
   text-shadow: var(--neon-amber-glow);
+}
+
+[data-theme="light"] .neon-glow {
+  text-shadow: none;
+  border-bottom: 2px solid var(--neon-amber);
 }
 
 /* Chalkboard Slate Cards */
@@ -134,7 +139,7 @@ body {
 
 .btn-primary {
   background-color: var(--neon-amber);
-  color: var(--bar-black);
+  color: var(--on-primary);
   border-color: var(--neon-amber);
   font-weight: 800;
 }
@@ -157,7 +162,7 @@ body {
 
 .btn-gold {
   background-color: var(--neon-amber);
-  color: var(--bar-black);
+  color: var(--on-primary);
   border-color: var(--neon-amber);
   font-weight: 800;
 }
@@ -183,14 +188,46 @@ body {
 
 .btn-destructive, .btn-danger {
   background-color: var(--neon-red);
-  color: var(--chalk-white);
+  color: #FFFFFF;
   border-color: var(--neon-red);
 }
 
 .btn-felt {
   background-color: var(--felt-teal);
-  color: var(--chalk-white);
+  color: #FFFFFF;
   border-color: var(--felt-teal-light);
+}
+
+.theme-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  min-height: 48px;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  background-color: var(--chalk-slate);
+  background-image: var(--chalkboard-noise);
+  border: 1px solid var(--chalk-border);
+  border-radius: var(--radius-sm);
+  color: var(--chalk-white);
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  flex-shrink: 0;
+  transition: background-color var(--duration-fast) var(--ease-out),
+              border-color var(--duration-fast) var(--ease-out),
+              transform var(--duration-fast) var(--ease-out);
+}
+
+.theme-toggle-btn:hover {
+  background-color: var(--chalk-slate-hover);
+  border-color: var(--neon-amber);
+  color: var(--neon-amber);
+}
+
+.theme-toggle-btn:active {
+  transform: scale(0.95);
 }
 
 /* Quick Start Cards */
@@ -388,7 +425,7 @@ body {
 
 .score-dot.active {
   background-color: var(--neon-amber);
-  color: var(--bar-black);
+  color: var(--on-primary);
   border-color: var(--neon-amber);
   font-weight: 800;
 }
@@ -610,7 +647,7 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(18, 16, 16, 0.94);
+  background-color: var(--modal-overlay-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -659,7 +696,7 @@ body {
 
 .payout-1 { 
   background-color: var(--felt-teal); 
-  color: var(--chalk-white); 
+  color: #FFFFFF; 
   border: 1px solid var(--felt-teal-light);
 }
 
@@ -692,7 +729,7 @@ body {
 /* Championship Match Spotlight */
 .final-match {
   border: 2px solid var(--neon-amber) !important;
-  box-shadow: 0 0 16px rgba(255, 178, 56, 0.35) !important;
+  box-shadow: var(--final-match-glow) !important;
 }
 
 /* Bracket Header & Controls Responsive Layout */
@@ -827,7 +864,7 @@ body {
   border: 2px solid var(--neon-amber);
   padding: 0.6rem 1.25rem;
   border-radius: var(--radius-md);
-  box-shadow: var(--shadow-lg), 0 0 16px rgba(255, 178, 56, 0.25);
+  box-shadow: var(--shadow-lg), var(--banner-glow);
   white-space: nowrap;
 }
 

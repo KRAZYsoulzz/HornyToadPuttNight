@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
-import { Plus, Trophy, Trash2, ChevronRight, Settings2, User, Swords, History, UserPlus, ArrowLeft, LockOpen, Lock as LockIcon, QrCode, Coins, Percent, Edit2, Check, X, Shuffle, GitMerge, Sliders, AlertTriangle, Tv, Minimize2, ArrowLeftRight, MoreVertical, RotateCcw, Crown, Info, Target } from 'lucide-react'
+import { Plus, Trophy, Trash2, ChevronRight, Settings2, User, Swords, History, UserPlus, ArrowLeft, LockOpen, Lock as LockIcon, QrCode, Coins, Percent, Edit2, Check, X, Shuffle, GitMerge, Sliders, AlertTriangle, Tv, Minimize2, ArrowLeftRight, MoreVertical, RotateCcw, Crown, Info, Target, Sun, Moon } from 'lucide-react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import SplitFlap from './components/SplitFlap'
 import Basket from './components/Basket'
 import WinnerReveal from './components/WinnerReveal'
 import { motionDurations } from './theme/motion'
+import { getTheme, setTheme, type Theme } from './theme/theme'
 import { generateBracket, calculatePayouts, getTournamentEntryFee, getTournamentPot, getTournamentLabel } from './logic/tournament'
 import type { TournamentConfig, Player, Match } from './logic/tournament'
 import { supabase } from './lib/supabase'
@@ -60,6 +61,31 @@ function App() {
   const [patioPutts, setPatioPutts] = useState(() => Number(localStorage.getItem('patioPutts') || 0))
   const [prevRanks, setPrevRanks] = useState<Record<string, number>>({})
   const [showFinishSummary, setShowFinishSummary] = useState<{ winner: string; payout: number } | null>(null)
+  const [theme, setAppTheme] = useState<Theme>(getTheme)
+
+  useEffect(() => {
+    const handleThemeChange = (e: Event) => {
+      const customEvent = e as CustomEvent<Theme>
+      if (customEvent.detail) {
+        setAppTheme(customEvent.detail)
+      } else {
+        setAppTheme(getTheme())
+      }
+    }
+    window.addEventListener('htpn-theme-change', handleThemeChange)
+    return () => window.removeEventListener('htpn-theme-change', handleThemeChange)
+  }, [])
+
+  const handleToggleTheme = () => {
+    const next = theme === 'dark' ? 'light' : 'dark'
+    setTheme(next)
+    setAppTheme(next)
+  }
+
+  const handleSelectTheme = (t: Theme) => {
+    setTheme(t)
+    setAppTheme(t)
+  }
 
   // Player Management Modals
   const [editingPlayerStats, setEditingPlayerStats] = useState<{
@@ -1503,6 +1529,14 @@ function App() {
         <header className="app-header">
           <HornyToadLogo size={42} showText={true} />
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <button
+              type="button"
+              className="theme-toggle-btn"
+              onClick={() => { haptic(); handleToggleTheme(); }}
+              aria-label="Toggle light/dark theme"
+            >
+              {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+            </button>
             <div className={`bracket-admin-badge ${isAdmin ? 'is-admin' : ''}`}>
               {isAdmin ? <LockOpen size={11} color="var(--neon-amber)" /> : <LockIcon size={11} style={{ opacity: 0.5 }} />}
               <span>{isAdmin ? 'ADMIN' : 'VIEW'}</span>
@@ -1520,7 +1554,7 @@ function App() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem' }}>
                     <div style={{ minWidth: 0, flex: 1 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', minWidth: 0 }}>
-                        <span style={{ fontSize: '0.625rem', fontWeight: 800, background: 'var(--neon-amber)', color: 'var(--bar-black)', padding: '0.15rem 0.45rem', borderRadius: '0.35rem', letterSpacing: '0.04em', flexShrink: 0 }}>ACTIVE</span>
+                        <span style={{ fontSize: '0.625rem', fontWeight: 800, background: 'var(--neon-amber)', color: 'var(--on-primary)', padding: '0.15rem 0.45rem', borderRadius: '0.35rem', letterSpacing: '0.04em', flexShrink: 0 }}>ACTIVE</span>
                         <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>{getTournamentLabel(activeTournament, allTournamentsList)}</h3>
                       </div>
                       <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.725rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -1829,7 +1863,7 @@ function App() {
                     )}
 
                     {isAdmin && (
-                      <button className="btn" style={{ padding: '0.3rem 0.75rem', fontSize: '0.65rem', background: 'var(--neon-amber)', color: 'var(--bar-black)', borderRadius: '1rem', height: '2.5rem', fontWeight: 800 }} 
+                      <button className="btn" style={{ padding: '0.3rem 0.75rem', fontSize: '0.65rem', background: 'var(--neon-amber)', color: 'var(--on-primary)', borderRadius: '1rem', height: '2.5rem', fontWeight: 800 }} 
                         onClick={handleFinishTournament}
                         onMouseDown={() => cancelTimerRef.current = setTimeout(() => setConfirmCancel(true), 1200)}
                         onMouseUp={() => cancelTimerRef.current && clearTimeout(cancelTimerRef.current)}
@@ -1927,7 +1961,7 @@ function App() {
                 <div className="bracket-swap-banner">
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <ArrowLeftRight size={16} className="accent-text" />
-                    <span style={{ fontWeight: 700, color: 'white' }}>
+                    <span style={{ fontWeight: 700, color: 'var(--text-main)' }}>
                       {swapSelection 
                         ? `Selected: ${players[swapSelection.playerId]?.name || 'Player'} — Tap another player to swap` 
                         : 'Tap any player in Round 1 to select'}
@@ -1935,7 +1969,7 @@ function App() {
                   </div>
                   <button 
                     className="btn btn-ghost" 
-                    style={{ padding: '0.2rem 0.5rem', fontSize: '0.65rem', background: 'rgba(255,255,255,0.1)', borderRadius: '0.5rem' }} 
+                    style={{ padding: '0.2rem 0.5rem', fontSize: '0.65rem', background: 'var(--chalk-slate-light)', color: 'var(--text-main)', borderRadius: '0.5rem' }} 
                     onClick={() => { setIsSwapMode(false); setSwapSelection(null); }}
                   >
                     Done
@@ -2151,8 +2185,8 @@ function App() {
                                 title="Player Options"
                                 style={{ 
                                   padding: '0.4rem', 
-                                  background: 'rgba(255,255,255,0.05)', 
-                                  border: '1px solid rgba(255, 255, 255, 0.12)', 
+                                  background: 'var(--chalk-slate-dark)', 
+                                  border: '1px solid var(--chalk-border)', 
                                   borderRadius: '50%', 
                                   color: 'var(--text-muted)', 
                                   display: 'flex', 
@@ -2254,7 +2288,7 @@ function App() {
                         onClick={() => setViewingPastTourney(t)}
                       >
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                             {label}
                           </div>
                           <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: '0.2rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -2307,6 +2341,35 @@ function App() {
           {view === 'settings' && (
              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
                <h2 className="page-title"><Settings2 size={22} className="accent-text" /> Settings & Configuration</h2>
+
+               <div className="card">
+                 <div className="card-title">
+                   {theme === 'dark' ? <Moon size={20} className="accent-text" /> : <Sun size={20} className="accent-text" />}
+                   Theme
+                 </div>
+                 <div className="option-group" style={{ marginBottom: 0 }}>
+                   <label>Theme</label>
+                   <div style={{ display: 'flex', gap: '0.5rem' }}>
+                     <button
+                       type="button"
+                       className={`btn ${theme === 'dark' ? 'btn-primary' : 'btn-secondary'}`}
+                       style={{ flex: 1, minHeight: '48px' }}
+                       onClick={() => { haptic(); handleSelectTheme('dark'); }}
+                     >
+                       <Moon size={16} /> Dark
+                     </button>
+                     <button
+                       type="button"
+                       className={`btn ${theme === 'light' ? 'btn-primary' : 'btn-secondary'}`}
+                       style={{ flex: 1, minHeight: '48px' }}
+                       onClick={() => { haptic(); handleSelectTheme('light'); }}
+                     >
+                       <Sun size={16} /> Light
+                     </button>
+                   </div>
+                 </div>
+               </div>
+
                {isAdmin ? (
                  <>
                    <div className="card">
@@ -3040,7 +3103,7 @@ function App() {
                   </button>
                   <button 
                     className="btn" 
-                    style={{ flex: 1, background: 'var(--neon-amber)', color: 'var(--bar-black)', fontWeight: 800 }} 
+                    style={{ flex: 1, background: 'var(--neon-amber)', color: 'var(--on-primary)', fontWeight: 800 }} 
                     onClick={() => {
                       setConfirmShuffle(false)
                       handleShuffleBracket()

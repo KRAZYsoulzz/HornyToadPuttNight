@@ -53,7 +53,7 @@ const SingleFlapDigit: React.FC<SingleFlapDigitProps> = ({ char, highlight = fal
           left: 0,
           right: 0,
           height: '1px',
-          background: 'var(--bar-black)',
+          background: 'var(--ink)',
           zIndex: 5,
           boxShadow: '0 1px 0 rgba(255,255,255,0.05)',
         }}
@@ -65,7 +65,7 @@ const SingleFlapDigit: React.FC<SingleFlapDigitProps> = ({ char, highlight = fal
           left: 0,
           width: '2px',
           height: '3px',
-          background: 'var(--bar-black)',
+          background: 'var(--ink)',
           zIndex: 6,
         }}
       />
@@ -76,7 +76,7 @@ const SingleFlapDigit: React.FC<SingleFlapDigitProps> = ({ char, highlight = fal
           right: 0,
           width: '2px',
           height: '3px',
-          background: 'var(--bar-black)',
+          background: 'var(--ink)',
           zIndex: 6,
         }}
       />

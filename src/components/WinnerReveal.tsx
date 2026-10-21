@@ -39,7 +39,7 @@ export const WinnerReveal: React.FC<WinnerRevealProps> = ({
         position: 'fixed',
         inset: 0,
         zIndex: 2000,
-        backgroundColor: 'rgba(10, 8, 8, 0.96)',
+        backgroundColor: 'var(--modal-overlay-bg)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -67,7 +67,7 @@ export const WinnerReveal: React.FC<WinnerRevealProps> = ({
           borderRadius: 'var(--radius-lg)',
           padding: '2.25rem 1.5rem',
           textAlign: 'center',
-          boxShadow: '0 0 35px rgba(255, 178, 56, 0.35), 0 20px 50px rgba(0, 0, 0, 0.9)',
+          boxShadow: 'var(--winner-modal-shadow)',
           position: 'relative',
         }}
       >
@@ -76,7 +76,7 @@ export const WinnerReveal: React.FC<WinnerRevealProps> = ({
             size={56}
             color="var(--neon-amber)"
             style={{
-              filter: 'drop-shadow(0 0 14px rgba(255, 178, 56, 0.6))',
+              filter: 'var(--trophy-filter)',
             }}
           />
         </div>
