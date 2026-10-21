@@ -1,108 +1,39 @@
-<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <radialGradient id="toadBgGlow" cx="50%" cy="40%" r="60%">
-      <stop offset="0%" stop-color="#132a22" />
-      <stop offset="70%" stop-color="#0a1219" />
-      <stop offset="100%" stop-color="#06090e" />
-    </radialGradient>
-    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#FDE68A" />
-      <stop offset="50%" stop-color="#F59E0B" />
-      <stop offset="100%" stop-color="#B45309" />
-    </linearGradient>
-    <linearGradient id="emeraldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#34D399" />
-      <stop offset="50%" stop-color="#10B981" />
-      <stop offset="100%" stop-color="#047857" />
-    </linearGradient>
-    <linearGradient id="armorDark" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#2A374A" />
-      <stop offset="100%" stop-color="#151D28" />
-    </linearGradient>
-    <linearGradient id="armorLight" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#3D4D63" />
-      <stop offset="100%" stop-color="#1E293B" />
-    </linearGradient>
-  </defs>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="96" fill="#121010" />
+  <!-- Disc Golf Basket in Neon Amber -->
+  <g fill="none" stroke="#FFB238" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Top Band / Deflector -->
+    <rect x="140" y="110" width="232" height="34" rx="6" fill="#FFB238" fill-opacity="0.15" stroke="#FFB238" stroke-width="12" />
+    <line x1="140" y1="127" x2="372" y2="127" stroke="#FFB238" stroke-width="6" opacity="0.6" />
 
-  <circle cx="100" cy="100" r="95" fill="url(#toadBgGlow)" />
-  <circle cx="100" cy="100" r="94" stroke="url(#goldGrad)" stroke-width="2.5" opacity="0.85" />
-  <circle cx="100" cy="100" r="88" stroke="url(#emeraldGrad)" stroke-width="1.2" stroke-dasharray="6 3" opacity="0.5" />
-  <circle cx="100" cy="100" r="84" stroke="#ffffff" stroke-width="0.5" opacity="0.15" />
+    <!-- Central Pole -->
+    <line x1="256" y1="144" x2="256" y2="420" stroke="#FFB238" stroke-width="16" />
 
-  <ellipse cx="100" cy="150" rx="64" ry="20" stroke="url(#emeraldGrad)" stroke-width="2" opacity="0.7" stroke-dasharray="120 20" />
-  <ellipse cx="100" cy="150" rx="52" ry="15" stroke="url(#goldGrad)" stroke-width="1" opacity="0.4" />
+    <!-- Hanging Chains -->
+    <!-- Outer Chains -->
+    <path d="M 166 144 Q 176 210 230 252" stroke="#FFB238" stroke-width="8" stroke-dasharray="10 6" />
+    <path d="M 346 144 Q 336 210 282 252" stroke="#FFB238" stroke-width="8" stroke-dasharray="10 6" />
+    <!-- Mid Chains -->
+    <path d="M 196 144 Q 212 216 244 256" stroke="#FFB238" stroke-width="8" stroke-dasharray="10 6" />
+    <path d="M 316 144 Q 300 216 268 256" stroke="#FFB238" stroke-width="8" stroke-dasharray="10 6" />
+    <!-- Inner Chains -->
+    <path d="M 226 144 Q 236 216 252 258" stroke="#FFB238" stroke-width="8" stroke-dasharray="10 6" />
+    <path d="M 286 144 Q 276 216 260 258" stroke="#FFB238" stroke-width="8" stroke-dasharray="10 6" />
+    <!-- Center Chain -->
+    <path d="M 256 144 L 256 260" stroke="#FFB238" stroke-width="8" stroke-dasharray="10 6" />
 
-  <g opacity="0.3" stroke="url(#goldGrad)" stroke-width="1.2">
-    <line x1="100" y1="36" x2="100" y2="162" stroke-width="2" stroke="#F59E0B" opacity="0.4" />
-    <path d="M 72 65 Q 84 100 100 115 Q 116 100 128 65" fill="none" />
-    <path d="M 80 65 Q 88 105 100 122 Q 112 105 120 65" fill="none" />
-    <path d="M 64 68 Q 80 110 100 130 Q 120 110 136 68" fill="none" />
+    <!-- Basket Tray / Cage -->
+    <path d="M 126 264 L 146 348 C 146 360 366 360 366 348 L 386 264 Z" fill="#FFB238" fill-opacity="0.12" stroke="#FFB238" stroke-width="14" />
+    <!-- Basket Vertical Struts -->
+    <line x1="172" y1="264" x2="182" y2="352" stroke="#FFB238" stroke-width="8" />
+    <line x1="214" y1="264" x2="218" y2="356" stroke="#FFB238" stroke-width="8" />
+    <line x1="298" y1="264" x2="294" y2="356" stroke="#FFB238" stroke-width="8" />
+    <line x1="340" y1="264" x2="330" y2="352" stroke="#FFB238" stroke-width="8" />
+
+    <!-- Base Stand -->
+    <path d="M 180 440 L 256 420 L 332 440" stroke="#FFB238" stroke-width="14" />
+    <line x1="200" y1="440" x2="312" y2="440" stroke="#FFB238" stroke-width="10" />
   </g>
-
-  <g transform="translate(0, -2)">
-    <path d="M 96 68 L 74 24 L 88 64 Z" fill="url(#goldGrad)" />
-    <path d="M 88 64 L 74 24 L 84 66 Z" fill="#92400E" opacity="0.6" />
-    <path d="M 104 68 L 126 24 L 112 64 Z" fill="url(#goldGrad)" />
-    <path d="M 112 64 L 126 24 L 116 66 Z" fill="#FDE68A" opacity="0.7" />
-
-    <path d="M 100 34 L 94 62 L 100 66 L 106 62 Z" fill="url(#goldGrad)" />
-    <path d="M 100 34 L 100 66 L 106 62 Z" fill="#FDE68A" opacity="0.5" />
-
-    <path d="M 82 72 L 48 42 L 74 76 Z" fill="url(#goldGrad)" />
-    <path d="M 74 76 L 48 42 L 68 76 Z" fill="#92400E" opacity="0.5" />
-    <path d="M 118 72 L 152 42 L 126 76 Z" fill="url(#goldGrad)" />
-    <path d="M 126 76 L 152 42 L 132 76 Z" fill="#FDE68A" opacity="0.6" />
-
-    <path d="M 68 88 L 38 74 L 66 96 Z" fill="url(#emeraldGrad)" />
-    <path d="M 132 88 L 162 74 L 134 96 Z" fill="url(#emeraldGrad)" />
-
-    <path d="M 64 104 L 40 102 L 66 114 Z" fill="url(#goldGrad)" />
-    <path d="M 136 104 L 160 102 L 134 114 Z" fill="url(#goldGrad)" />
-
-    <polygon points="100,64 78,74 84,94 100,90" fill="url(#armorLight)" />
-    <polygon points="100,64 122,74 116,94 100,90" fill="url(#armorDark)" />
-    <polygon points="78,74 66,94 84,94" fill="url(#armorDark)" />
-    <polygon points="122,74 134,94 116,94" fill="url(#armorLight)" />
-
-    <polygon points="72,92 100,88 84,97" fill="url(#goldGrad)" opacity="0.9" />
-    <polygon points="128,92 100,88 116,97" fill="url(#goldGrad)" opacity="0.7" />
-
-    <polygon points="74,93 88,96 82,102 72,98" fill="#0A1118" />
-    <ellipse cx="80" cy="97" rx="4.5" ry="2.5" transform="rotate(-15, 80, 97)" fill="#10B981" />
-    <ellipse cx="80" cy="97" rx="1.5" ry="2.2" transform="rotate(-15, 80, 97)" fill="#022C22" />
-    <circle cx="81.5" cy="96" r="0.8" fill="#A7F3D0" />
-
-    <polygon points="126,93 112,96 118,102 128,98" fill="#0A1118" />
-    <ellipse cx="120" cy="97" rx="4.5" ry="2.5" transform="rotate(15, 120, 97)" fill="#10B981" />
-    <ellipse cx="120" cy="97" rx="1.5" ry="2.2" transform="rotate(15, 120, 97)" fill="#022C22" />
-    <circle cx="121.5" cy="96" r="0.8" fill="#A7F3D0" />
-
-    <polygon points="100,88 92,106 100,102" fill="url(#armorLight)" />
-    <polygon points="100,88 108,106 100,102" fill="url(#armorDark)" />
-    <polygon points="96,105 100,99 104,105 100,107" fill="url(#goldGrad)" />
-
-    <polygon points="92,106 100,102 108,106 118,118 100,126 82,118" fill="url(#armorDark)" />
-    <polygon points="100,102 108,106 118,118 100,126" fill="url(#armorLight)" opacity="0.7" />
-    
-    <path d="M 78 116 L 100 128 L 122 116" stroke="url(#goldGrad)" stroke-width="1.8" fill="none" stroke-linecap="round" />
-    <circle cx="96" cy="112" r="1" fill="#04070A" />
-    <circle cx="104" cy="112" r="1" fill="#04070A" />
-  </g>
-
-  <g transform="translate(0, 10)">
-    <ellipse cx="100" cy="144" rx="42" ry="12" fill="#111B27" stroke="url(#goldGrad)" stroke-width="1.5" />
-    <ellipse cx="100" cy="144" rx="35" ry="9" fill="url(#emeraldGrad)" />
-    <ellipse cx="100" cy="143" rx="22" ry="5" fill="#0B131E" opacity="0.6" />
-    <circle cx="100" cy="143" r="2" fill="#FDE68A" />
-    <path d="M 80 144 L 81 142 L 82 144 L 80.5 143 Z" fill="#FDE68A" />
-    <path d="M 120 144 L 121 142 L 122 144 L 120.5 143 Z" fill="#FDE68A" />
-  </g>
-
-  <g fill="url(#goldGrad)" opacity="0.75">
-    <polygon points="40,140 42,135 44,140 40,137 44,137" />
-    <polygon points="48,154 50,149 52,154 48,151 52,151" />
-    <polygon points="160,140 158,135 156,140 160,137 156,137" />
-    <polygon points="152,154 150,149 148,154 152,151 148,151" />
-  </g>
+  <!-- Disc entering the basket in neon amber glow -->
+  <ellipse cx="200" cy="190" rx="36" ry="10" transform="rotate(-18 200 190)" fill="#FFB238" />
 </svg>

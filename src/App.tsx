@@ -1,6 +1,10 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
-import { Plus, Trophy, Trash2, ChevronRight, Settings2, User, Swords, History, UserPlus, ArrowLeft, LockOpen, Lock as LockIcon, QrCode, Coins, Percent, Edit2, Check, X, Shuffle, GitMerge, Sliders, AlertTriangle, Tv, Minimize2, ArrowLeftRight, MoreVertical, RotateCcw } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { Plus, Trophy, Trash2, ChevronRight, Settings2, User, Swords, History, UserPlus, ArrowLeft, LockOpen, Lock as LockIcon, QrCode, Coins, Percent, Edit2, Check, X, Shuffle, GitMerge, Sliders, AlertTriangle, Tv, Minimize2, ArrowLeftRight, MoreVertical, RotateCcw, Crown, Info, Target } from 'lucide-react'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
+import SplitFlap from './components/SplitFlap'
+import Basket from './components/Basket'
+import WinnerReveal from './components/WinnerReveal'
+import { motionDurations } from './theme/motion'
 import { generateBracket, calculatePayouts, getTournamentEntryFee, getTournamentPot, getTournamentLabel } from './logic/tournament'
 import type { TournamentConfig, Player, Match } from './logic/tournament'
 import { supabase } from './lib/supabase'
@@ -52,6 +56,9 @@ function App() {
   const [pastTournaments, setPastTournaments] = useState<any[]>([])
   const [viewingPastTourney, setViewingPastTourney] = useState<any | null>(null)
   const hasManuallyLeftBracket = useRef(false)
+  const prefersReducedMotion = useReducedMotion()
+  const [patioPutts, setPatioPutts] = useState(() => Number(localStorage.getItem('patioPutts') || 0))
+  const [prevRanks, setPrevRanks] = useState<Record<string, number>>({})
   const [showFinishSummary, setShowFinishSummary] = useState<{ winner: string; payout: number } | null>(null)
 
   // Player Management Modals
@@ -92,6 +99,15 @@ function App() {
   const [showRivalryMatch, setShowRivalryMatch] = useState<Match | null>(null)
   const [playerSort, setPlayerSort] = useState<'name' | 'wins' | 'earnings' | 'pct'>('name')
   const [playerFilter, setPlayerFilter] = useState<'all' | 'coming'>('all')
+
+  const handleSortChange = (newSort: 'name' | 'wins' | 'earnings' | 'pct') => {
+    const currentRanksMap: Record<string, number> = {}
+    Object.values(players).forEach((p, idx) => {
+      currentRanksMap[p.id] = idx + 1
+    })
+    setPrevRanks(currentRanksMap)
+    setPlayerSort(newSort)
+  }
 
   const topEarnerId = useMemo(() => {
     const list = Object.values(players)
@@ -1267,8 +1283,8 @@ function App() {
       if (wins < 5) return {}
       const total = wins + (p.losses || 0)
       const rate = wins / total
-      if (rate >= 0.8) return { background: 'rgba(245, 158, 11, 0.1)', borderLeft: '3px solid var(--accent)' }
-      if (rate >= 0.6) return { background: 'rgba(16, 185, 129, 0.05)', borderLeft: '3px solid var(--primary)' }
+      if (rate >= 0.8) return { background: 'var(--chalk-slate-light)', borderLeft: '3px solid var(--neon-amber)' }
+      if (rate >= 0.6) return { background: 'var(--chalk-slate)', borderLeft: '3px solid var(--felt-teal)' }
       return {}
     }
     
@@ -1321,7 +1337,7 @@ function App() {
             className={`player-slot ${match.winnerId === match.player1Id ? 'winner' : ''} ${!match.player1Id && match.score === 'BYE' ? 'bye' : ''}`}
             style={{
               ...getHeatStyle(match.player1Id),
-              ...(isP1SwapSelected ? { outline: '2px solid var(--accent)', boxShadow: '0 0 12px rgba(245, 158, 11, 0.7)', background: 'rgba(245, 158, 11, 0.15)' } : {}),
+              ...(isP1SwapSelected ? { outline: '2px solid var(--neon-amber)', boxShadow: 'var(--neon-amber-box-glow)', background: 'var(--chalk-slate-light)' } : {}),
               ...(isP1AvailableBye ? { cursor: 'pointer' } : {})
             }}
             onMouseDown={startPress}
@@ -1344,7 +1360,7 @@ function App() {
                     <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
                       <span style={{ fontStyle: 'italic', opacity: 0.7 }}>BYE</span>
                       {isP1AvailableBye && (
-                        <span style={{ fontSize: '0.65rem', color: 'var(--accent)', fontWeight: 800, background: 'rgba(245, 158, 11, 0.15)', padding: '0.05rem 0.35rem', borderRadius: '0.25rem', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
+                        <span style={{ fontSize: '0.65rem', color: 'var(--neon-amber)', fontWeight: 800, background: 'var(--chalk-slate-dark)', padding: '0.1rem 0.4rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--neon-amber)' }}>
                           + ADD
                         </span>
                       )}
@@ -1352,7 +1368,7 @@ function App() {
                   ) : '----'
                 )}
               </span>
-              {match.winnerId === match.player1Id && <span className="match-score" style={{ flexShrink: 0, whiteSpace: 'nowrap', fontSize: '0.7rem', margin: 0 }}>{match.score}</span>}
+              {match.winnerId === match.player1Id && <span className="match-score" style={{ flexShrink: 0, whiteSpace: 'nowrap', fontSize: '0.75rem', margin: 0 }}><SplitFlap value={match.score} /></span>}
               {match.player1Id && players[match.player1Id] && ((players[match.player1Id].wins || 0) + (players[match.player1Id].losses || 0) > 0) && (
                 <span style={{ flexShrink: 0, fontSize: '0.55rem', opacity: 0.4, fontWeight: 800, fontFamily: 'monospace' }}>
                   {(((players[match.player1Id].wins || 0) / ((players[match.player1Id].wins || 0) + (players[match.player1Id].losses || 0))) * 100).toFixed(0)}%
@@ -1364,7 +1380,7 @@ function App() {
             className={`player-slot ${match.winnerId === match.player2Id ? 'winner' : ''} ${!match.player2Id && match.score === 'BYE' ? 'bye' : ''}`}
             style={{
               ...getHeatStyle(match.player2Id),
-              ...(isP2SwapSelected ? { outline: '2px solid var(--accent)', boxShadow: '0 0 12px rgba(245, 158, 11, 0.7)', background: 'rgba(245, 158, 11, 0.15)' } : {}),
+              ...(isP2SwapSelected ? { outline: '2px solid var(--neon-amber)', boxShadow: 'var(--neon-amber-box-glow)', background: 'var(--chalk-slate-light)' } : {}),
               ...(isP2AvailableBye ? { cursor: 'pointer' } : {})
             }}
             onMouseDown={startPress}
@@ -1387,7 +1403,7 @@ function App() {
                     <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
                       <span style={{ fontStyle: 'italic', opacity: 0.7 }}>BYE</span>
                       {isP2AvailableBye && (
-                        <span style={{ fontSize: '0.65rem', color: 'var(--accent)', fontWeight: 800, background: 'rgba(245, 158, 11, 0.15)', padding: '0.05rem 0.35rem', borderRadius: '0.25rem', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
+                        <span style={{ fontSize: '0.65rem', color: 'var(--neon-amber)', fontWeight: 800, background: 'var(--chalk-slate-dark)', padding: '0.1rem 0.4rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--neon-amber)' }}>
                           + ADD
                         </span>
                       )}
@@ -1395,7 +1411,7 @@ function App() {
                   ) : '----'
                 )}
               </span>
-              {match.winnerId === match.player2Id && <span className="match-score" style={{ flexShrink: 0, whiteSpace: 'nowrap', fontSize: '0.7rem', margin: 0 }}>{match.score}</span>}
+              {match.winnerId === match.player2Id && <span className="match-score" style={{ flexShrink: 0, whiteSpace: 'nowrap', fontSize: '0.75rem', margin: 0 }}><SplitFlap value={match.score} /></span>}
               {match.player2Id && players[match.player2Id] && ((players[match.player2Id].wins || 0) + (players[match.player2Id].losses || 0) > 0) && (
                 <span style={{ flexShrink: 0, fontSize: '0.55rem', opacity: 0.4, fontWeight: 800, fontFamily: 'monospace' }}>
                   {(((players[match.player2Id].wins || 0) / ((players[match.player2Id].wins || 0) + (players[match.player2Id].losses || 0))) * 100).toFixed(0)}%
@@ -1488,7 +1504,7 @@ function App() {
           <HornyToadLogo size={42} showText={true} />
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <div className={`bracket-admin-badge ${isAdmin ? 'is-admin' : ''}`}>
-              {isAdmin ? <LockOpen size={11} color="#10b981" /> : <LockIcon size={11} style={{ opacity: 0.5 }} />}
+              {isAdmin ? <LockOpen size={11} color="var(--neon-amber)" /> : <LockIcon size={11} style={{ opacity: 0.5 }} />}
               <span>{isAdmin ? 'ADMIN' : 'VIEW'}</span>
             </div>
           </div>
@@ -1500,11 +1516,11 @@ function App() {
           {view === 'home' && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               {activeTournament && (
-                <div className="card" style={{ border: '1px solid rgba(16, 185, 129, 0.4)', marginBottom: '1rem', background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(14, 20, 29, 0.95))' }}>
+                <div className="card" style={{ border: '1px solid var(--neon-amber)', marginBottom: '1rem', backgroundColor: 'var(--chalk-slate)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem' }}>
                     <div style={{ minWidth: 0, flex: 1 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', minWidth: 0 }}>
-                        <span style={{ fontSize: '0.625rem', fontWeight: 800, background: 'var(--primary)', color: 'white', padding: '0.15rem 0.45rem', borderRadius: '0.35rem', letterSpacing: '0.04em', flexShrink: 0 }}>ACTIVE</span>
+                        <span style={{ fontSize: '0.625rem', fontWeight: 800, background: 'var(--neon-amber)', color: 'var(--bar-black)', padding: '0.15rem 0.45rem', borderRadius: '0.35rem', letterSpacing: '0.04em', flexShrink: 0 }}>ACTIVE</span>
                         <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>{getTournamentLabel(activeTournament, allTournamentsList)}</h3>
                       </div>
                       <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.725rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -1520,9 +1536,52 @@ function App() {
                 <div className="card-title" style={{ margin: 0 }}><UserPlus size={20} className="accent-text" /> Coming Today ({Object.values(players).filter(p => p.status === 'coming').length})</div>
                 <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '1rem' }}>
                   {Object.values(players).filter(p => p.status === 'coming').sort((a, b) => a.name.localeCompare(b.name)).map(p => (
-                    <span key={p.id} style={{ background: 'rgba(16, 185, 129, 0.12)', color: '#34D399', padding: '0.25rem 0.65rem', borderRadius: '1rem', fontSize: '0.75rem', fontWeight: 700, border: '1px solid rgba(16, 185, 129, 0.25)', maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={p.name}>{p.name}</span>
+                    <span key={p.id} style={{ background: 'var(--chalk-slate-light)', color: 'var(--felt-teal-light)', padding: '0.25rem 0.65rem', borderRadius: 'var(--radius-sm)', fontSize: '0.75rem', fontWeight: 700, border: '1px solid var(--chalk-border)', maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={p.name}>{p.name}</span>
                   ))}
                   {Object.values(players).filter(p => p.status === 'coming').length === 0 && <p style={{ opacity: 0.5, fontSize: '0.8rem', margin: 0 }}>No players registered for tonight yet.</p>}
+                </div>
+              </div>
+
+              {/* Back-Bar Patio Putting Basket Target */}
+              <div className="card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+                <div className="card-title" style={{ alignSelf: 'flex-start', margin: 0 }}>
+                  <Target size={20} className="accent-text" /> Back-Bar Putting Basket
+                </div>
+                <p style={{ fontSize: '0.75rem', color: 'var(--chalk-dim)', margin: '0.25rem 0 0.5rem' }}>
+                  Patio target practice. Tap when a putt drops to wobble chains and chalk tallies!
+                </p>
+                <Basket score={patioPutts} size={135} showTallies={true} />
+                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem', width: '100%', maxWidth: '320px' }}>
+                  <button 
+                    type="button"
+                    className="btn btn-primary" 
+                    style={{ flex: 1, minHeight: '48px' }}
+                    onClick={() => {
+                      haptic('success');
+                      setPatioPutts(p => {
+                        const next = p + 1;
+                        localStorage.setItem('patioPutts', String(next));
+                        return next;
+                      });
+                    }}
+                  >
+                    +1 PUTT MADE
+                  </button>
+                  {patioPutts > 0 && (
+                    <button 
+                      type="button"
+                      className="btn btn-secondary"
+                      style={{ minHeight: '48px', padding: '0.5rem 0.75rem' }}
+                      title="Reset tallies"
+                      onClick={() => {
+                        haptic('light');
+                        setPatioPutts(0);
+                        localStorage.removeItem('patioPutts');
+                      }}
+                    >
+                      <RotateCcw size={16} />
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -1542,13 +1601,13 @@ function App() {
                           <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             <Coins size={20} className="accent-text" /> Tonight's Buy-ins
                           </span>
-                          <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--primary)', background: 'rgba(16, 185, 129, 0.1)', padding: '0.2rem 0.6rem', borderRadius: '0.75rem', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--felt-teal-light)', background: 'var(--chalk-slate-dark)', padding: '0.25rem 0.6rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--chalk-border)' }}>
                             Total Pot: ${totalPot}
                           </span>
                         </div>
                         <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', marginBottom: '0.25rem', fontSize: '0.7rem', fontWeight: 700 }}>
-                          <span style={{ color: '#10b981', background: 'rgba(16, 185, 129, 0.08)', padding: '0.15rem 0.4rem', borderRadius: '0.25rem', border: '1px solid rgba(16, 185, 129, 0.1)' }}>Collected: ${collected}</span>
-                          <span style={{ color: 'var(--accent)', background: 'rgba(245, 158, 11, 0.08)', padding: '0.15rem 0.4rem', borderRadius: '0.25rem', border: '1px solid rgba(245, 158, 11, 0.1)' }}>Outstanding: ${outstanding}</span>
+                          <span style={{ color: 'var(--felt-teal-light)', background: 'var(--chalk-slate-dark)', padding: '0.2rem 0.5rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--chalk-border)' }}>Collected: ${collected}</span>
+                          <span style={{ color: 'var(--neon-amber)', background: 'var(--chalk-slate-dark)', padding: '0.2rem 0.5rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--chalk-border)' }}>Outstanding: ${outstanding}</span>
                         </div>
                       </>
                     )
@@ -1556,7 +1615,7 @@ function App() {
                   
                   {isAdmin && (
                     <p style={{ fontSize: '0.65rem', opacity: 0.5, marginTop: '0.35rem', marginBottom: '0.5rem' }}>
-                      💡 Admin Tip: Tap a player to mark them as Paid.
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}><Info size={12} color="var(--neon-amber)" /> Admin Tip: Tap a player to mark them as Paid.</span>
                     </p>
                   )}
 
@@ -1575,9 +1634,9 @@ function App() {
                               justifyContent: 'space-between', 
                               alignItems: 'center', 
                               padding: '0.4rem 0.6rem', 
-                              background: isPaid ? 'rgba(16, 185, 129, 0.05)' : 'rgba(255,255,255,0.02)', 
-                              borderRadius: '0.5rem', 
-                              border: isPaid ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid var(--glass-border)',
+                              background: isPaid ? 'var(--chalk-slate-light)' : 'var(--chalk-slate-dark)', 
+                              borderRadius: 'var(--radius-sm)', 
+                              border: isPaid ? '1px solid var(--felt-teal)' : '1px solid var(--chalk-border)',
                               cursor: isAdmin ? 'pointer' : 'default',
                               opacity: isPaid ? 0.7 : 1,
                               transition: 'all 0.2s'
@@ -1588,8 +1647,8 @@ function App() {
                             </span>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
                               {isPaid ? (
-                                <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#10b981', background: 'rgba(16, 185, 129, 0.1)', padding: '0.1rem 0.4rem', borderRadius: '0.25rem' }}>
-                                  ✓ PAID
+                                <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--felt-teal-light)', background: 'var(--chalk-slate)', border: '1px solid var(--felt-teal)', padding: '0.15rem 0.45rem', borderRadius: 'var(--radius-sm)', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                                  PAID
                                 </span>
                               ) : (
                                 <span style={{ color: 'var(--accent)', fontWeight: 800, fontSize: '0.85rem' }}>
@@ -1608,7 +1667,7 @@ function App() {
               <div className="card">
                 <div className="card-title"><Plus size={20} className="accent-text" /> {activeTournament ? 'Start New Tournament' : 'New Bracket'}</div>
                 {activeTournament && (
-                  <p style={{ fontSize: '0.8rem', color: 'var(--danger)', marginBottom: '1rem', marginTop: '-0.5rem' }}>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--neon-red)', marginBottom: '1rem', marginTop: '-0.5rem' }}>
                     Note: Starting a new bracket will replace the current active one.
                   </p>
                 )}
@@ -1699,11 +1758,11 @@ function App() {
                         onClick={quickStartComing} 
                         title="Quick start with players marked Coming Today"
                       >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#10B981' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: 'var(--neon-amber)' }}>
                           <UserPlus size={15} />
                           <span style={{ fontSize: '0.625rem', fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase' }}>QUICK START</span>
                         </div>
-                        <span style={{ fontSize: '0.825rem', fontWeight: 800, color: '#F8FAFC', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>
+                        <span style={{ fontSize: '0.825rem', fontWeight: 800, color: 'var(--chalk-white)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>
                           Coming Today
                         </span>
                       </button>
@@ -1714,18 +1773,18 @@ function App() {
                         onClick={quickStartLast} 
                         title="Quick start with players from last tournament"
                       >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#F59E0B' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: 'var(--neon-amber)' }}>
                           <History size={15} />
                           <span style={{ fontSize: '0.625rem', fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase' }}>QUICK START</span>
                         </div>
-                        <span style={{ fontSize: '0.825rem', fontWeight: 800, color: '#F8FAFC', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>
+                        <span style={{ fontSize: '0.825rem', fontWeight: 800, color: 'var(--chalk-white)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>
                           Last Roster
                         </span>
                       </button>
                     </div>
                   </>
                 ) : (
-                  <div style={{ padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: '1rem', textAlign: 'center' }}>
+                  <div style={{ padding: '1rem', background: 'var(--chalk-slate-dark)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--chalk-border)', textAlign: 'center' }}>
                     <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Bracket creation is restricted to Admins.</p>
                   </div>
                 )}
@@ -1748,7 +1807,7 @@ function App() {
                     </div>
 
                     <div className={`bracket-admin-badge ${isAdmin ? 'is-admin' : ''}`}>
-                      {isAdmin ? <LockOpen size={10} color="#10b981" /> : <LockIcon size={10} style={{ opacity: 0.5 }} />}
+                      {isAdmin ? <LockOpen size={10} color="var(--neon-amber)" /> : <LockIcon size={10} style={{ opacity: 0.5 }} />}
                       <span>{isAdmin ? 'ADMIN' : 'VIEW'}</span>
                     </div>
                   </div>
@@ -1770,7 +1829,7 @@ function App() {
                     )}
 
                     {isAdmin && (
-                      <button className="btn" style={{ padding: '0.3rem 0.75rem', fontSize: '0.65rem', background: 'var(--primary)', color: 'white', borderRadius: '1rem', height: '2.5rem', fontWeight: 800 }} 
+                      <button className="btn" style={{ padding: '0.3rem 0.75rem', fontSize: '0.65rem', background: 'var(--neon-amber)', color: 'var(--bar-black)', borderRadius: '1rem', height: '2.5rem', fontWeight: 800 }} 
                         onClick={handleFinishTournament}
                         onMouseDown={() => cancelTimerRef.current = setTimeout(() => setConfirmCancel(true), 1200)}
                         onMouseUp={() => cancelTimerRef.current && clearTimeout(cancelTimerRef.current)}
@@ -1845,7 +1904,7 @@ function App() {
                   {/* Pot Info Group */}
                   <div className="bracket-pot-group">
                     <span style={{ fontSize: '0.5rem', opacity: 0.5, fontWeight: 700 }}>TOTAL POT</span>
-                    <span style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--accent)', textShadow: '0 2px 10px rgba(255, 184, 0, 0.3)' }}>
+                    <span style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--accent)', textShadow: 'var(--neon-amber-glow)' }}>
                       ${getTournamentPot(activeTournament.config)}
                     </span>
                     <div style={{ display: 'flex', gap: '0.35rem', marginTop: '0.1rem' }}>
@@ -1895,23 +1954,19 @@ function App() {
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
               {/* Executive Top Metrics Bar */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '0.5rem', marginBottom: '0.85rem' }}>
-                <div className="card" style={{ margin: 0, padding: '0.65rem 0.5rem', textAlign: 'center', background: 'rgba(14, 21, 32, 0.65)' }}>
+                <div className="card" style={{ margin: 0, padding: '0.65rem 0.5rem', textAlign: 'center', background: 'var(--chalk-slate)' }}>
                   <span style={{ fontSize: '0.6rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Total Roster</span>
-                  <span style={{ fontSize: '1.25rem', fontWeight: 900, color: '#F8FAFC', fontVariantNumeric: 'tabular-nums', display: 'block', marginTop: '2px' }}>
+                  <span style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--chalk-white)', fontVariantNumeric: 'tabular-nums', display: 'block', marginTop: '2px' }}><SplitFlap value={Object.keys(players).length} />
                     {Object.keys(players).length}
                   </span>
                 </div>
-                <div className="card" style={{ margin: 0, padding: '0.65rem 0.5rem', textAlign: 'center', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.35)', boxShadow: '0 4px 16px rgba(16, 185, 129, 0.15)' }}>
-                  <span style={{ fontSize: '0.6rem', fontWeight: 800, color: '#34D399', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Coming Today</span>
-                  <span style={{ fontSize: '1.25rem', fontWeight: 900, color: '#34D399', fontVariantNumeric: 'tabular-nums', display: 'block', marginTop: '2px' }}>
-                    {Object.values(players).filter(p => p.status === 'coming').length}
-                  </span>
+                <div className="card" style={{ margin: 0, padding: '0.65rem 0.5rem', textAlign: 'center', background: 'var(--chalk-slate)', border: '1px solid var(--felt-teal)', boxShadow: 'var(--shadow-sm)' }}>
+                  <span style={{ fontSize: '0.6rem', fontWeight: 800, color: 'var(--felt-teal-light)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Coming Today</span>
+                  <span style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--felt-teal-light)', fontVariantNumeric: 'tabular-nums', display: 'block', marginTop: '2px' }}><SplitFlap value={Object.values(players).filter(p => p.status === 'coming').length} /></span>
                 </div>
-                <div className="card" style={{ margin: 0, padding: '0.65rem 0.5rem', textAlign: 'center', background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
+                <div className="card" style={{ margin: 0, padding: '0.65rem 0.5rem', textAlign: 'center', background: 'var(--chalk-slate)', border: '1px solid var(--neon-amber)', boxShadow: 'var(--shadow-sm)' }}>
                   <span style={{ fontSize: '0.6rem', fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Career Cash</span>
-                  <span style={{ fontSize: '1.25rem', fontWeight: 900, color: '#FCD34D', fontVariantNumeric: 'tabular-nums', display: 'block', marginTop: '2px' }}>
-                    ${Object.values(players).reduce((sum, p) => sum + (p.earnings || 0), 0)}
-                  </span>
+                  <span style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--neon-amber)', fontVariantNumeric: 'tabular-nums', display: 'block', marginTop: '2px' }}><SplitFlap value={Object.values(players).reduce((sum, p) => sum + (p.earnings || 0), 0)} prefix="$" /></span>
                 </div>
               </div>
 
@@ -1937,7 +1992,7 @@ function App() {
                   <button 
                     type="button" 
                     className={`filter-pill ${playerFilter === 'all' && playerSort === 'name' ? 'active' : ''}`}
-                    onClick={() => { haptic(); setPlayerFilter('all'); setPlayerSort('name'); }}
+                    onClick={() => { haptic(); setPlayerFilter('all'); handleSortChange('name'); }}
                   >
                     All ({Object.keys(players).length})
                   </button>
@@ -1947,9 +2002,9 @@ function App() {
                     className={`filter-pill ${playerFilter === 'coming' ? 'active' : ''}`}
                     onClick={() => { haptic(); setPlayerFilter(prev => prev === 'coming' ? 'all' : 'coming'); }}
                     style={{ 
-                      borderColor: playerFilter === 'coming' ? 'rgba(16, 185, 129, 0.6)' : 'rgba(16, 185, 129, 0.3)',
-                      color: playerFilter === 'coming' ? '#34D399' : '#10B981',
-                      background: playerFilter === 'coming' ? 'rgba(16, 185, 129, 0.25)' : 'rgba(16, 185, 129, 0.08)'
+                      borderColor: playerFilter === 'coming' ? 'var(--neon-amber)' : 'var(--chalk-border)',
+                      color: playerFilter === 'coming' ? 'var(--neon-amber)' : 'var(--chalk-dim)',
+                      background: playerFilter === 'coming' ? 'var(--chalk-slate-light)' : 'var(--chalk-slate-dark)'
                     }}
                   >
                     <Check size={12} strokeWidth={3} /> Coming ({Object.values(players).filter(p => p.status === 'coming').length})
@@ -1960,7 +2015,7 @@ function App() {
                       key={mode} 
                       type="button"
                       className={`filter-pill ${playerFilter === 'all' && playerSort === mode ? 'active' : ''}`}
-                      onClick={() => { haptic(); setPlayerFilter('all'); setPlayerSort(mode); }}
+                      onClick={() => { haptic(); setPlayerFilter('all'); handleSortChange(mode); }}
                     >
                       {mode === 'wins' && <Trophy size={12} />}
                       {mode === 'earnings' && <Coins size={12} />}
@@ -1996,38 +2051,54 @@ function App() {
                       }
                       return a.name.localeCompare(b.name)
                     })
-                    .map(p => {
+                    .map((p, idx) => {
                     const total = (p.wins || 0) + (p.losses || 0);
                     const winPct = total > 0 ? ((p.wins / total) * 100).toFixed(0) : 0;
                     const isTop = p.id === topEarnerId;
+                    const currentRank = idx + 1;
+                    const prevRank = prevRanks[p.id];
+                    const hasRankMoved = prevRank !== undefined && prevRank !== currentRank;
 
                     return (
                       <motion.div 
-                        key={p.id} 
+                        key={p.id}
+                        layout={!prefersReducedMotion}
+                        transition={{ duration: prefersReducedMotion ? 0.01 : motionDurations.base, ease: [0, 0, 0.2, 1] }}
                         className={`player-glass-card ${p.status === 'coming' ? 'status-coming' : (p.status === 'out' ? 'status-out' : '')}`}
                         onClick={() => setSelectedH2HPlayerId(p.id)}
                       >
+                        {/* Rank with SplitFlap */}
+                        <div style={{ display: 'flex', alignItems: 'center', minWidth: '24px', flexShrink: 0 }}>
+                          <SplitFlap value={currentRank} minDigits={1} />
+                        </div>
+
                         {/* Left: Player Identity & Compact Stats */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', minWidth: 0, flex: 1 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', minWidth: 0 }}>
-                            <span style={{ fontWeight: 750, fontSize: '0.975rem', color: '#F8FAFC', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '-0.01em' }}>
+                            <motion.span 
+                              animate={hasRankMoved && !prefersReducedMotion ? { color: ['var(--neon-amber)', 'var(--chalk-white)', 'var(--neon-amber)', 'var(--chalk-white)'] } : undefined}
+                              transition={{ duration: 0.45 }}
+                              style={{ fontWeight: 750, fontSize: '0.975rem', color: isTop ? 'var(--neon-amber)' : 'var(--chalk-white)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '-0.01em', textShadow: isTop ? 'var(--neon-amber-glow)' : 'none' }}
+                            >
                               {p.name}
-                            </span>
+                            </motion.span>
                             {isTop && (
-                              <span title="High Roller Leader" style={{ fontSize: '0.75rem', flexShrink: 0 }}>👑</span>
+                              <span title="High Roller Leader" style={{ display: 'inline-flex', alignItems: 'center', flexShrink: 0 }}>
+                                <Crown size={14} color="var(--neon-amber)" />
+                              </span>
                             )}
                           </div>
 
-                          {/* Compact Inline Stats */}
+                          {/* Compact Inline Stats with SplitFlap */}
                           <div style={{ display: 'flex', gap: '0.75rem', fontSize: '0.75rem', alignItems: 'center' }}>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: '3px', color: '#F59E0B', fontWeight: 650 }}>
-                              <Trophy size={11} strokeWidth={2.5} /> <span>{p.wins || 0}</span>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '3px', color: 'var(--neon-amber)', fontWeight: 650 }}>
+                              <Trophy size={11} strokeWidth={2.5} /> <SplitFlap value={p.wins || 0} />
                             </span>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: '3px', color: '#10B981', fontWeight: 650 }}>
-                              <Coins size={11} strokeWidth={2.5} /> <span>${p.earnings || 0}</span>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '3px', color: 'var(--felt-teal-light)', fontWeight: 650 }}>
+                              <Coins size={11} strokeWidth={2.5} /> <SplitFlap value={p.earnings || 0} prefix="$" />
                             </span>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: '3px', color: '#38BDF8', fontWeight: 650 }}>
-                              <Percent size={11} strokeWidth={2.5} /> <span>{winPct}%</span>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '3px', color: 'var(--chalk-dim)', fontWeight: 650 }}>
+                              <Percent size={11} strokeWidth={2.5} /> <SplitFlap value={winPct} suffix="%" />
                             </span>
                           </div>
                         </div>
@@ -2036,20 +2107,20 @@ function App() {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
                           {isAdmin ? (
                             <>
-                              <div style={{ display: 'flex', background: 'rgba(10, 15, 23, 0.65)', padding: '2px', borderRadius: '0.5rem', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                              <div style={{ display: 'flex', background: 'var(--chalk-slate-dark)', padding: '2px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--chalk-border)' }}>
                                 <button 
                                   className="btn-ghost" 
                                   title="Mark as Coming"
                                   style={{ 
                                     padding: '0.3rem 0.5rem', 
-                                    background: p.status === 'coming' ? 'linear-gradient(180deg, #10B981, #059669)' : 'transparent', 
-                                    color: p.status === 'coming' ? '#FFFFFF' : 'rgba(16, 185, 129, 0.7)', 
-                                    borderRadius: '0.35rem',
+                                    background: p.status === 'coming' ? 'var(--felt-teal)' : 'transparent', 
+                                    color: p.status === 'coming' ? 'var(--chalk-white)' : 'var(--felt-teal-light)', 
+                                    borderRadius: 'var(--radius-sm)',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                     transition: 'all 0.15s ease',
-                                    boxShadow: p.status === 'coming' ? '0 2px 8px rgba(16, 185, 129, 0.4)' : 'none'
+                                    boxShadow: 'none'
                                   }} 
                                   onClick={() => handleSetStatus(p.id, 'coming')}
                                 >
@@ -2060,14 +2131,14 @@ function App() {
                                   title="Mark as Out"
                                   style={{ 
                                     padding: '0.3rem 0.5rem', 
-                                    background: p.status === 'out' ? 'linear-gradient(180deg, #EF4444, #DC2626)' : 'transparent', 
-                                    color: p.status === 'out' ? '#FFFFFF' : 'rgba(239, 68, 68, 0.7)', 
-                                    borderRadius: '0.35rem',
+                                    background: p.status === 'out' ? 'var(--neon-red)' : 'transparent', 
+                                    color: 'var(--chalk-white)', 
+                                    borderRadius: 'var(--radius-sm)',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                     transition: 'all 0.15s ease',
-                                    boxShadow: p.status === 'out' ? '0 2px 8px rgba(239, 68, 68, 0.4)' : 'none'
+                                    boxShadow: 'none'
                                   }} 
                                   onClick={() => handleSetStatus(p.id, 'out')}
                                 >
@@ -2107,10 +2178,10 @@ function App() {
                                 fontSize: '0.65rem', 
                                 fontWeight: 800, 
                                 letterSpacing: '0.03em',
-                                background: p.status === 'coming' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                                color: p.status === 'coming' ? '#34D399' : '#F87171',
-                                border: p.status === 'coming' ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(239, 68, 68, 0.3)',
-                                boxShadow: p.status === 'coming' ? '0 0 10px rgba(16, 185, 129, 0.2)' : 'none'
+                                background: p.status === 'coming' ? 'var(--chalk-slate-light)' : 'var(--chalk-slate-dark)',
+                                color: p.status === 'coming' ? 'var(--felt-teal-light)' : 'var(--neon-red)',
+                                border: p.status === 'coming' ? '1px solid var(--felt-teal)' : '1px solid var(--neon-red)',
+                                boxShadow: 'none'
                               }}>
                                 {p.status === 'coming' ? (
                                   <>
@@ -2152,15 +2223,15 @@ function App() {
                     style={{ 
                       marginBottom: '0.45rem', 
                       padding: '0.55rem 0.85rem',
-                      background: idx === 0 ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(14, 21, 32, 0.8))' : undefined,
-                      borderColor: idx === 0 ? 'rgba(245, 158, 11, 0.35)' : undefined
+                      background: idx === 0 ? 'var(--chalk-slate-light)' : undefined,
+                      borderColor: idx === 0 ? 'var(--neon-amber)' : undefined
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', minWidth: 0, flex: 1 }}>
                       <span className={`payout-badge payout-${idx + 1}`} style={{ flexShrink: 0 }}>#{idx + 1}</span>
-                      <span style={{ fontWeight: 800, fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0, color: '#F8FAFC' }}>{p.name}</span>
+                      <span style={{ fontWeight: 800, fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0, color: 'var(--chalk-white)' }}>{p.name}</span>
                     </div>
-                    <span style={{ color: idx === 0 ? '#FCD34D' : 'var(--primary)', fontWeight: 850, fontVariantNumeric: 'tabular-nums', flexShrink: 0, fontSize: '0.95rem' }}>${p.earnings}</span>
+                    <span style={{ color: idx === 0 ? 'var(--neon-amber)' : 'var(--chalk-white)', fontWeight: 850, fontVariantNumeric: 'tabular-nums', flexShrink: 0, fontSize: '0.95rem' }}><SplitFlap value={p.earnings || 0} prefix="$" /></span>
                   </div>
                 ))}
               </div>
@@ -2188,7 +2259,7 @@ function App() {
                           </div>
                           <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: '0.2rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                             {t.config.players.length} Players • ${fee} Entry • Pot: ${pot}
-                            {winnerName && <span style={{ color: 'var(--accent)', marginLeft: '0.5rem', fontWeight: 600 }}>🏆 {winnerName}</span>}
+                            {winnerName && <span style={{ color: "var(--neon-amber)", marginLeft: "0.5rem", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "4px" }}><Trophy size={13} color="var(--neon-amber)" /> {winnerName}</span>}
                           </div>
                         </div>
 
@@ -2198,7 +2269,7 @@ function App() {
                               <button 
                                 className="btn-ghost" 
                                 title="Edit Bracket Details & Payouts"
-                                style={{ padding: '0.45rem', background: 'rgba(255,255,255,0.05)', borderRadius: '50%' }}
+                                style={{ padding: '0.45rem', background: 'var(--chalk-slate-dark)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--chalk-border)' }}
                                 onClick={() => setEditingPastTourneyConfig({
                                   id: t.id,
                                   entryFee: fee,
@@ -2214,7 +2285,7 @@ function App() {
                               <button 
                                 className="btn-ghost" 
                                 title="Delete Tournament Record"
-                                style={{ padding: '0.45rem', background: 'rgba(239, 68, 68, 0.05)', borderRadius: '50%' }} 
+                                style={{ padding: '0.45rem', background: 'var(--chalk-slate-dark)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--neon-red)' }} 
                                 onClick={() => setConfirmDeleteTourney(t)}
                               >
                                 <Trash2 size={15} color="var(--danger)" />
@@ -2267,22 +2338,22 @@ function App() {
                      </div>
                    </div>
 
-                   <div className="card" style={{ border: '1px solid var(--danger)', opacity: 0.8 }}>
-                     <div className="card-title" style={{ color: 'var(--danger)' }}><Trash2 size={20} /> Danger Zone</div>
+                   <div className="card" style={{ border: '1px solid var(--neon-red)', opacity: 0.8 }}>
+                     <div className="card-title" style={{ color: 'var(--neon-red)' }}><Trash2 size={20} /> Danger Zone</div>
                      <p style={{ fontSize: '0.8rem', marginBottom: '1rem' }}>Admin operations that affect global state.</p>
                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                        <button className="btn" style={{ width: '100%', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', border: '1px solid var(--danger)' }} onClick={() => { 
+                        <button className="btn" style={{ width: '100%', background: 'var(--chalk-slate-dark)', color: 'var(--neon-red)', border: '1px solid var(--neon-red)' }} onClick={() => { 
                           if(confirm("Are you sure? This will hide all current players from the 'Coming' list.")) {
                             resetAllAttendance();
                           }
                         }}>Reset Attendance</button>
-                        <button className="btn" style={{ width: '100%', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', border: '1px solid var(--danger)' }} onClick={() => { 
+                        <button className="btn" style={{ width: '100%', background: 'var(--chalk-slate-dark)', color: 'var(--neon-red)', border: '1px solid var(--neon-red)' }} onClick={() => { 
                           if(confirm("DANGER: This will permanently wipe all wins, losses, and earnings for EVERY player. Are you absolutely sure?")) {
                             resetAllStats();
                           }
                         }}>Clear All Player Stats</button>
                         {activeTournament && (
-                          <button className="btn" style={{ width: '100%', background: 'var(--danger)', color: 'white' }} onClick={async () => {
+                          <button className="btn" style={{ width: '100%', background: 'var(--neon-red)', color: 'var(--chalk-white)', border: '1px solid var(--neon-red)' }} onClick={async () => {
                             if(confirm("DELETE current tournament permanently? This cannot be undone.")) {
                               await supabase.from('tournaments').delete().eq('id', activeTournament.id);
                               setActiveTournament(null);
@@ -2293,7 +2364,7 @@ function App() {
                      </div>
                    </div>
 
-                   <button className="btn btn-secondary" style={{ width: '100%', marginTop: '1rem', border: '1px solid rgba(255,255,255,0.1)' }} onClick={() => setIsAdmin(false)}>
+                   <button className="btn btn-secondary" style={{ width: '100%', marginTop: '1rem', border: '1px solid var(--chalk-border)' }} onClick={() => setIsAdmin(false)}>
                      LOGOUT ADMIN
                    </button>
                  </>
@@ -2326,7 +2397,7 @@ function App() {
                     } else {
                       window.location.reload();
                     }
-                  }} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.1)', fontSize: '0.6rem', cursor: 'pointer', letterSpacing: '0.1em' }}>
+                  }} style={{ background: 'none', border: 'none', color: 'var(--chalk-faint)', fontSize: '0.6rem', cursor: 'pointer', letterSpacing: '0.1em' }}>
                     REFRESH v2.0.0
                   </button>
                </div>
@@ -2470,7 +2541,7 @@ function App() {
 
                    <button 
                      className="btn" 
-                     style={{ width: '100%', justifyContent: 'flex-start', padding: '0.85rem 1rem', fontSize: '0.9rem', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', border: '1px solid rgba(239, 68, 68, 0.2)' }}
+                     style={{ width: '100%', justifyContent: 'flex-start', padding: '0.85rem 1rem', fontSize: '0.9rem', background: 'var(--chalk-slate-dark)', color: 'var(--neon-red)', border: '1px solid var(--neon-red)' }}
                      onClick={() => {
                        const pId = showPlayerActionMenuId
                        setShowPlayerActionMenuId(null)
@@ -2605,7 +2676,7 @@ function App() {
                 </div>
 
                 {mergePrimaryId && mergeSecondaryId && players[mergePrimaryId] && players[mergeSecondaryId] && (
-                  <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '0.75rem', border: '1px solid var(--glass-border)', marginBottom: '1.25rem' }}>
+                  <div style={{ background: 'var(--chalk-slate-dark)', padding: '1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--chalk-border)', marginBottom: '1.25rem' }}>
                     <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase' }}>Combined Result Preview</span>
                     <div style={{ marginTop: '0.5rem', fontSize: '0.85rem' }}>
                       <div><b>Name:</b> {players[mergePrimaryId]?.name}</div>
@@ -2663,7 +2734,7 @@ function App() {
                   </div>
                 </div>
 
-                <div style={{ background: 'rgba(255,255,255,0.03)', padding: '0.75rem', borderRadius: '0.5rem', marginBottom: '1.25rem', fontSize: '0.8rem' }}>
+                <div style={{ background: 'var(--chalk-slate-dark)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--chalk-border)', marginBottom: '1.25rem', fontSize: '0.8rem' }}>
                   New Total Pot: <b>${(activeTournament.config.players.length * activeTourneyEditFee) + activeTourneyEditCash}</b>
                 </div>
 
@@ -2749,12 +2820,12 @@ function App() {
           {confirmDeleteTourney && (
             <motion.div className="modal-overlay" onClick={() => setConfirmDeleteTourney(null)}>
               <div className="modal-content" onClick={e => e.stopPropagation()}>
-                <h3 className="card-title" style={{ color: 'var(--danger)' }}><AlertTriangle size={20} /> Delete Tournament?</h3>
+                <h3 className="card-title" style={{ color: 'var(--neon-red)' }}><AlertTriangle size={20} /> Delete Tournament?</h3>
                 <p style={{ fontSize: '0.85rem', opacity: 0.8, marginBottom: '1rem' }}>
                   Are you sure you want to permanently delete <b>{getTournamentLabel(confirmDeleteTourney, allTournamentsList)}</b>?
                 </p>
 
-                <div style={{ background: 'rgba(255,255,255,0.03)', padding: '0.75rem 1rem', borderRadius: '0.75rem', border: '1px solid var(--glass-border)', marginBottom: '1.25rem' }}>
+                <div style={{ background: 'var(--chalk-slate-dark)', padding: '0.75rem 1rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--chalk-border)', marginBottom: '1.25rem' }}>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.8rem', cursor: 'pointer' }}>
                     <input 
                       type="checkbox" 
@@ -2767,7 +2838,7 @@ function App() {
 
                 <div style={{ display: 'flex', gap: '1rem' }}>
                   <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setConfirmDeleteTourney(null)}>Cancel</button>
-                  <button className="btn" style={{ flex: 1, background: 'var(--danger)', color: 'white' }} onClick={() => handleDeletePastTournament(confirmDeleteTourney, rollbackStatsOnDelete)}>Delete</button>
+                  <button className="btn" style={{ flex: 1, background: 'var(--neon-red)', color: 'var(--chalk-white)', border: '1px solid var(--neon-red)' }} onClick={() => handleDeletePastTournament(confirmDeleteTourney, rollbackStatsOnDelete)}>Delete</button>
                 </div>
               </div>
             </motion.div>
@@ -2820,8 +2891,8 @@ function App() {
                         className="btn btn-secondary bracket-circle-btn" 
                         onClick={toggleKioskMode} 
                         style={{ 
-                          background: isKioskMode ? 'rgba(16, 185, 129, 0.25)' : undefined, 
-                          border: isKioskMode ? '1.5px solid var(--primary)' : undefined 
+                          background: isKioskMode ? 'var(--chalk-slate-light)' : undefined, 
+                          border: isKioskMode ? '1.5px solid var(--neon-amber)' : undefined 
                         }}
                         title={isKioskMode ? "Exit Fullscreen Kiosk" : "Fullscreen TV / Kiosk Mode"}
                       >
@@ -2839,7 +2910,7 @@ function App() {
 
                     <div className="bracket-pot-group">
                       <span style={{ fontSize: '0.5rem', opacity: 0.5, fontWeight: 700 }}>TOTAL POT</span>
-                      <span style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--accent)', textShadow: '0 2px 10px rgba(255, 184, 0, 0.3)' }}>
+                      <span style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--accent)', textShadow: 'var(--neon-amber-glow)' }}>
                         ${getTournamentPot(viewingPastTourney.config)}
                       </span>
                       <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.2rem' }}>
@@ -2873,7 +2944,7 @@ function App() {
                 </p>
                 <div style={{ display: 'flex', gap: '1rem' }}>
                   <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setConfirmDeletePlayerId(null)}>Cancel</button>
-                  <button className="btn" style={{ flex: 1, background: 'var(--danger)', color: 'white' }} onClick={() => deletePlayer(confirmDeletePlayerId)}>Delete</button>
+                  <button className="btn" style={{ flex: 1, background: 'var(--neon-red)', color: 'var(--chalk-white)', border: '1px solid var(--neon-red)' }} onClick={() => deletePlayer(confirmDeletePlayerId)}>Delete</button>
                 </div>
               </div>
             </motion.div>
@@ -2914,7 +2985,7 @@ function App() {
                   const h2h = calculateH2H(showRivalryMatch.player1Id, showRivalryMatch.player2Id)
                   const total = h2h.p1Wins + h2h.p2Wins
                   return (
-                    <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1.5rem', borderRadius: '1rem', border: '1px solid var(--glass-border)' }}>
+                    <div style={{ background: 'var(--chalk-slate-dark)', padding: '1.5rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--chalk-border)' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.8rem', fontWeight: 700 }}>
                         <span>{h2h.p1Wins} WINS</span>
                         <span>{h2h.p2Wins} WINS</span>
@@ -2944,7 +3015,7 @@ function App() {
                 <h3 className="card-title">Cancel?</h3>
                 <div style={{ display: 'flex', gap: '1rem' }}>
                   <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setConfirmCancel(false)}>No</button>
-                  <button className="btn" style={{ flex: 1, background: 'var(--danger)', color: 'white' }} onClick={async () => { await supabase.from('tournaments').delete().eq('id', activeTournament?.id); setConfirmCancel(false); setView('home'); }}>Yes, Cancel</button>
+                  <button className="btn" style={{ flex: 1, background: 'var(--neon-red)', color: 'var(--chalk-white)', border: '1px solid var(--neon-red)' }} onClick={async () => { await supabase.from('tournaments').delete().eq('id', activeTournament?.id); setConfirmCancel(false); setView('home'); }}>Yes, Cancel</button>
                 </div>
               </div>
             </motion.div>
@@ -2955,7 +3026,7 @@ function App() {
             <motion.div className="modal-overlay" onClick={() => setConfirmShuffle(false)}>
               <div className="modal-content" onClick={e => e.stopPropagation()}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-                  <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'rgba(245, 158, 11, 0.2)', border: '1px solid var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'var(--chalk-slate-dark)', border: '1px solid var(--neon-amber)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     <Shuffle size={20} className="accent-text" />
                   </div>
                   <h3 className="card-title" style={{ margin: 0 }}>Shuffle Bracket?</h3>
@@ -2969,7 +3040,7 @@ function App() {
                   </button>
                   <button 
                     className="btn" 
-                    style={{ flex: 1, background: 'var(--accent)', color: '#000', fontWeight: 700 }} 
+                    style={{ flex: 1, background: 'var(--neon-amber)', color: 'var(--bar-black)', fontWeight: 800 }} 
                     onClick={() => {
                       setConfirmShuffle(false)
                       handleShuffleBracket()
@@ -2987,7 +3058,7 @@ function App() {
             <motion.div className="modal-overlay" onClick={() => setConfirmSwap(null)}>
               <div className="modal-content" onClick={e => e.stopPropagation()}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-                  <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'rgba(99, 102, 241, 0.2)', border: '1px solid var(--secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'var(--chalk-slate-dark)', border: '1px solid var(--chalk-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     <ArrowLeftRight size={20} color="var(--secondary)" />
                   </div>
                   <h3 className="card-title" style={{ margin: 0 }}>Swap Matchup?</h3>
@@ -3025,7 +3096,7 @@ function App() {
             }}>
               <div className="modal-content" onClick={e => e.stopPropagation()}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-                  <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'rgba(245, 158, 11, 0.2)', border: '1px solid var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'var(--chalk-slate-dark)', border: '1px solid var(--neon-amber)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     <UserPlus size={20} className="accent-text" />
                   </div>
                   <div>
@@ -3057,7 +3128,7 @@ function App() {
                               justifyContent: 'space-between',
                               padding: '0.5rem 0.75rem',
                               borderRadius: '0.6rem',
-                              background: isSelected ? 'rgba(245, 158, 11, 0.15)' : 'rgba(255, 255, 255, 0.03)',
+                              background: isSelected ? 'var(--chalk-slate-light)' : 'var(--chalk-slate-dark)',
                               border: `1.5px solid ${isSelected ? 'var(--accent)' : 'var(--glass-border)'}`,
                               cursor: 'pointer',
                               transition: 'all 0.2s'
@@ -3081,7 +3152,7 @@ function App() {
                     const oppId = b ? (b.player1Id || b.player2Id) : null
                     const oppName = (oppId && players[oppId]?.name) || 'Player'
                     return (
-                      <div style={{ background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.25)', padding: '0.5rem 0.75rem', borderRadius: '0.6rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <div style={{ background: 'var(--chalk-slate-dark)', border: '1px solid var(--neon-amber)', padding: '0.5rem 0.75rem', borderRadius: '0.6rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <Swords size={16} className="accent-text" />
                         <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Matchup: vs <strong>{oppName}</strong> in Round 1</span>
                       </div>
@@ -3165,7 +3236,7 @@ function App() {
                                 justifyContent: 'space-between',
                                 padding: '0.5rem 0.75rem',
                                 borderRadius: '0.5rem',
-                                background: isSelected ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.02)',
+                                background: isSelected ? 'var(--chalk-slate-light)' : 'var(--chalk-slate-dark)',
                                 border: `1.5px solid ${isSelected ? 'var(--primary)' : 'var(--glass-border)'}`,
                                 cursor: 'pointer'
                               }}
@@ -3177,7 +3248,7 @@ function App() {
                                 </span>
                               </div>
                               {p.status === 'coming' && (
-                                <span style={{ fontSize: '0.65rem', color: 'var(--primary)', fontWeight: 700, background: 'rgba(16, 185, 129, 0.1)', padding: '0.1rem 0.4rem', borderRadius: '0.5rem' }}>
+                                <span style={{ fontSize: '0.65rem', color: 'var(--primary)', fontWeight: 700, background: 'var(--chalk-slate-dark)', padding: '0.1rem 0.4rem', borderRadius: '0.5rem' }}>
                                   Coming
                                 </span>
                               )}
@@ -3233,29 +3304,23 @@ function App() {
         </AnimatePresence>
       </main>
 
-      {/* Finish Summary Modal */}
+      {/* Winner Reveal Overlay */}
       <AnimatePresence>
         {showFinishSummary && (
-          <motion.div className="modal-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <motion.div className="modal-content" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} style={{ textAlign: 'center', padding: '2rem', border: '1.5px solid var(--accent)', boxShadow: '0 0 30px rgba(245, 158, 11, 0.25), 0 25px 50px rgba(0,0,0,0.8)' }}>
-              <div style={{ marginBottom: '1.25rem' }}>
-                <Trophy size={64} className="accent-text" style={{ margin: '0 auto', filter: 'drop-shadow(0 0 16px rgba(245, 158, 11, 0.5))' }} />
-              </div>
-              <h2 style={{ marginBottom: '0.5rem', fontWeight: 800, letterSpacing: '-0.01em' }}>Tournament Complete!</h2>
-              <div style={{ fontSize: '1.5rem', fontWeight: 900, marginBottom: '0.75rem', color: '#F8FAFC', wordBreak: 'break-word', overflowWrap: 'break-word' }}>{showFinishSummary.winner}</div>
-              <p style={{ opacity: 0.8, marginBottom: '1.75rem', fontSize: '1rem' }}>Total Payout: <span style={{ color: 'var(--accent)', fontWeight: 800, fontSize: '1.25rem', fontVariantNumeric: 'tabular-nums' }}>${showFinishSummary.payout}</span></p>
-              <button className="btn btn-primary" style={{ width: '100%', padding: '0.85rem' }} onClick={() => setShowFinishSummary(null)}>CLOSE</button>
-            </motion.div>
-          </motion.div>
+          <WinnerReveal
+            winner={showFinishSummary.winner}
+            payout={showFinishSummary.payout}
+            onClose={() => setShowFinishSummary(null)}
+          />
         )}
       </AnimatePresence>
 
       {!isKioskMode && view !== 'bracket' && !viewingPastTourney && (
         <nav className="nav">
-          <div className={`nav-item ${view === 'home' ? 'active' : ''}`} onClick={handleGoHome}><Swords size={20} /><span>Bracket</span></div>
-          <div className={`nav-item ${view === 'players' ? 'active' : ''}`} onClick={() => { haptic(); setView('players'); }}><User size={20} /><span>Players</span></div>
-          <div className={`nav-item ${view === 'history' ? 'active' : ''}`} onClick={() => { haptic(); setView('history'); fetchData(); }}><History size={20} /><span>History</span></div>
-          <div className={`nav-item ${view === 'settings' ? 'active' : ''}`} onClick={() => { haptic(); setView('settings'); }}><Settings2 size={20} /><span>Config</span></div>
+          <button type="button" className={`nav-item ${view === 'home' ? 'active' : ''}`} onClick={handleGoHome}><Swords size={20} /><span>Bracket</span></button>
+          <button type="button" className={`nav-item ${view === 'players' ? 'active' : ''}`} onClick={() => { haptic(); setView('players'); }}><User size={20} /><span>Players</span></button>
+          <button type="button" className={`nav-item ${view === 'history' ? 'active' : ''}`} onClick={() => { haptic(); setView('history'); fetchData(); }}><History size={20} /><span>History</span></button>
+          <button type="button" className={`nav-item ${view === 'settings' ? 'active' : ''}`} onClick={() => { haptic(); setView('settings'); }}><Settings2 size={20} /><span>Config</span></button>
         </nav>
       )}
 

@@ -16,8 +16,8 @@ export default defineConfig({
         name: 'Horny Toad Putt Night',
         short_name: 'Putt Night',
         description: 'Horny Toad Putt Night Tournament Manager',
-        theme_color: '#090d12',
-        background_color: '#090d12',
+        theme_color: '#121010',
+        background_color: '#121010',
         display: 'standalone',
         icons: [
           {
