@@ -9,19 +9,33 @@ interface SplitFlapProps {
   prefix?: string;
   suffix?: string;
   highlightOnChange?: boolean;
+  variant?: 'default' | 'sm';
 }
 
 interface SingleFlapDigitProps {
   char: string;
   highlight?: boolean;
+  variant?: 'default' | 'sm';
 }
 
-const SingleFlapDigit: React.FC<SingleFlapDigitProps> = ({ char, highlight = false }) => {
+const isNumeric = (val: unknown): boolean => {
+  if (val == null) return false;
+  if (typeof val === 'number') return !Number.isNaN(val);
+  if (typeof val === 'string') {
+    const trimmed = val.trim();
+    if (trimmed === '') return false;
+    return /^-?\d+(\.\d+)?$/.test(trimmed);
+  }
+  return false;
+};
+
+const SingleFlapDigit: React.FC<SingleFlapDigitProps> = ({ char, highlight = false, variant = 'default' }) => {
   const prefersReducedMotion = useReducedMotion();
+  const isSm = variant === 'sm';
 
   return (
     <div
-      className="split-flap-digit"
+      className={`split-flap-digit ${isSm ? 'split-flap-digit-sm' : ''}`}
       style={{
         position: 'relative',
         display: 'inline-flex',
@@ -31,9 +45,9 @@ const SingleFlapDigit: React.FC<SingleFlapDigitProps> = ({ char, highlight = fal
         background: 'var(--chalk-slate-dark)',
         border: '1px solid var(--chalk-border)',
         borderRadius: 'var(--radius-sm)',
-        width: '1.25em',
-        height: '1.5em',
-        lineHeight: '1.5em',
+        width: isSm ? '1.05em' : '1.25em',
+        height: isSm ? '1.35em' : '1.5em',
+        lineHeight: isSm ? '1.35em' : '1.5em',
         textAlign: 'center',
         fontFamily: 'var(--font-score)',
         fontVariantNumeric: 'tabular-nums',
@@ -117,29 +131,36 @@ const SingleFlapDigit: React.FC<SingleFlapDigitProps> = ({ char, highlight = fal
 export const SplitFlap: React.FC<SplitFlapProps> = ({
   value,
   className = '',
-  minDigits = 1,
   prefix = '',
   suffix = '',
   highlightOnChange = false,
+  variant = 'default',
 }) => {
-  const strVal = value != null ? String(value) : '';
-  const padded = strVal.length < minDigits ? strVal.padStart(minDigits, '0') : strVal;
-  const chars = padded.split('');
+  if (!isNumeric(value)) {
+    return (
+      <span className={`split-flap-plain ${className}`} style={{ fontVariantNumeric: 'tabular-nums' }}>
+        {prefix}{value != null ? String(value) : ''}{suffix}
+      </span>
+    );
+  }
+
+  const strVal = value != null ? String(value).trim() : '';
+  const chars = strVal.split('');
 
   return (
     <span
-      className={`split-flap-container ${className}`}
+      className={`split-flap-container ${variant === 'sm' ? 'split-flap-sm' : ''} ${className}`}
       style={{
         display: 'inline-flex',
         alignItems: 'center',
-        gap: '2px',
+        gap: variant === 'sm' ? '1.5px' : '2px',
         fontVariantNumeric: 'tabular-nums',
         verticalAlign: 'middle',
       }}
     >
       {prefix && <span style={{ marginRight: '2px' }}>{prefix}</span>}
       {chars.map((ch, idx) => (
-        <SingleFlapDigit key={idx} char={ch} highlight={highlightOnChange} />
+        <SingleFlapDigit key={idx} char={ch} highlight={highlightOnChange} variant={variant} />
       ))}
       {suffix && <span style={{ marginLeft: '2px' }}>{suffix}</span>}
     </span>

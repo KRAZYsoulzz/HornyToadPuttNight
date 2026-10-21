@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
-import { Plus, Trophy, Trash2, ChevronRight, Settings2, User, Swords, History, UserPlus, ArrowLeft, LockOpen, Lock as LockIcon, QrCode, Coins, Percent, Edit2, Check, X, Shuffle, GitMerge, Sliders, AlertTriangle, Tv, Minimize2, ArrowLeftRight, MoreVertical, RotateCcw, Crown, Info, Target, Sun, Moon } from 'lucide-react'
+import { Plus, Trophy, Trash2, ChevronRight, Settings2, User, Swords, History, UserPlus, ArrowLeft, LockOpen, Lock as LockIcon, QrCode, Coins, Percent, Edit2, Check, X, Shuffle, GitMerge, Sliders, AlertTriangle, Tv, Minimize2, ArrowLeftRight, MoreVertical, RotateCcw, Crown, Info, Sun, Moon } from 'lucide-react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import SplitFlap from './components/SplitFlap'
 import Basket from './components/Basket'
@@ -58,7 +58,6 @@ function App() {
   const [viewingPastTourney, setViewingPastTourney] = useState<any | null>(null)
   const hasManuallyLeftBracket = useRef(false)
   const prefersReducedMotion = useReducedMotion()
-  const [patioPutts, setPatioPutts] = useState(() => Number(localStorage.getItem('patioPutts') || 0))
   const [prevRanks, setPrevRanks] = useState<Record<string, number>>({})
   const [showFinishSummary, setShowFinishSummary] = useState<{ winner: string; payout: number } | null>(null)
   const [theme, setAppTheme] = useState<Theme>(getTheme)
@@ -422,6 +421,11 @@ function App() {
   const tourneyHasStarted = useMemo(() => {
     if (!activeTournament) return false
     return activeTournament.matches.some(m => m.winnerId !== null && m.score !== 'BYE')
+  }, [activeTournament])
+
+  const completedMatchesCount = useMemo(() => {
+    if (!activeTournament) return 0
+    return activeTournament.matches.filter(m => m.winnerId !== null && m.score !== 'BYE').length
   }, [activeTournament])
 
   const availableByes = useMemo(() => {
@@ -1310,7 +1314,7 @@ function App() {
       const total = wins + (p.losses || 0)
       const rate = wins / total
       if (rate >= 0.8) return { background: 'var(--chalk-slate-light)', borderLeft: '3px solid var(--neon-amber)' }
-      if (rate >= 0.6) return { background: 'var(--chalk-slate)', borderLeft: '3px solid var(--felt-teal)' }
+      if (rate >= 0.6) return { background: 'var(--chalk-slate)', borderLeft: '3px solid var(--chalk-border-light)' }
       return {}
     }
     
@@ -1570,52 +1574,9 @@ function App() {
                 <div className="card-title" style={{ margin: 0 }}><UserPlus size={20} className="accent-text" /> Coming Today ({Object.values(players).filter(p => p.status === 'coming').length})</div>
                 <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '1rem' }}>
                   {Object.values(players).filter(p => p.status === 'coming').sort((a, b) => a.name.localeCompare(b.name)).map(p => (
-                    <span key={p.id} style={{ background: 'var(--chalk-slate-light)', color: 'var(--felt-teal-light)', padding: '0.25rem 0.65rem', borderRadius: 'var(--radius-sm)', fontSize: '0.75rem', fontWeight: 700, border: '1px solid var(--chalk-border)', maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={p.name}>{p.name}</span>
+                    <span key={p.id} style={{ background: 'var(--chalk-slate-light)', color: 'var(--chalk-white)', padding: '0.25rem 0.65rem', borderRadius: 'var(--radius-sm)', fontSize: '0.75rem', fontWeight: 700, border: '1px solid var(--chalk-border)', maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={p.name}>{p.name}</span>
                   ))}
                   {Object.values(players).filter(p => p.status === 'coming').length === 0 && <p style={{ opacity: 0.5, fontSize: '0.8rem', margin: 0 }}>No players registered for tonight yet.</p>}
-                </div>
-              </div>
-
-              {/* Back-Bar Patio Putting Basket Target */}
-              <div className="card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-                <div className="card-title" style={{ alignSelf: 'flex-start', margin: 0 }}>
-                  <Target size={20} className="accent-text" /> Back-Bar Putting Basket
-                </div>
-                <p style={{ fontSize: '0.75rem', color: 'var(--chalk-dim)', margin: '0.25rem 0 0.5rem' }}>
-                  Patio target practice. Tap when a putt drops to wobble chains and chalk tallies!
-                </p>
-                <Basket score={patioPutts} size={135} showTallies={true} />
-                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem', width: '100%', maxWidth: '320px' }}>
-                  <button 
-                    type="button"
-                    className="btn btn-primary" 
-                    style={{ flex: 1, minHeight: '48px' }}
-                    onClick={() => {
-                      haptic('success');
-                      setPatioPutts(p => {
-                        const next = p + 1;
-                        localStorage.setItem('patioPutts', String(next));
-                        return next;
-                      });
-                    }}
-                  >
-                    +1 PUTT MADE
-                  </button>
-                  {patioPutts > 0 && (
-                    <button 
-                      type="button"
-                      className="btn btn-secondary"
-                      style={{ minHeight: '48px', padding: '0.5rem 0.75rem' }}
-                      title="Reset tallies"
-                      onClick={() => {
-                        haptic('light');
-                        setPatioPutts(0);
-                        localStorage.removeItem('patioPutts');
-                      }}
-                    >
-                      <RotateCcw size={16} />
-                    </button>
-                  )}
                 </div>
               </div>
 
@@ -1936,21 +1897,24 @@ function App() {
                   </div>
 
                   {/* Pot Info Group */}
-                  <div className="bracket-pot-group">
-                    <span style={{ fontSize: '0.5rem', opacity: 0.5, fontWeight: 700 }}>TOTAL POT</span>
-                    <span style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--accent)', textShadow: 'var(--neon-amber-glow)' }}>
-                      ${getTournamentPot(activeTournament.config)}
-                    </span>
-                    <div style={{ display: 'flex', gap: '0.35rem', marginTop: '0.1rem' }}>
-                      {(() => {
-                        const pot = (activeTournament.config.players.length) * getTournamentEntryFee(activeTournament.config);
-                        const payouts = calculatePayouts(pot, activeTournament.config.addedCash, activeTournament.config.payoutSplits);
-                        return payouts.map((p, i) => (
-                          <span key={i} style={{ fontSize: '0.55rem', fontWeight: 800, color: i === 0 ? 'var(--accent)' : 'var(--text-muted)' }}>
-                            {i+1}st: ${p}
-                          </span>
-                        ));
-                      })()}
+                  <div className="bracket-pot-group" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '0.65rem' }}>
+                    <Basket score={completedMatchesCount} size={40} showTallies={true} />
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.15rem' }}>
+                      <span style={{ fontSize: '0.5rem', opacity: 0.5, fontWeight: 700 }}>TOTAL POT</span>
+                      <span style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--accent)', textShadow: 'var(--neon-amber-glow)' }}>
+                        ${getTournamentPot(activeTournament.config)}
+                      </span>
+                      <div style={{ display: 'flex', gap: '0.35rem', marginTop: '0.1rem' }}>
+                        {(() => {
+                          const pot = (activeTournament.config.players.length) * getTournamentEntryFee(activeTournament.config);
+                          const payouts = calculatePayouts(pot, activeTournament.config.addedCash, activeTournament.config.payoutSplits);
+                          return payouts.map((p, i) => (
+                            <span key={i} style={{ fontSize: '0.55rem', fontWeight: 800, color: i === 0 ? 'var(--accent)' : 'var(--text-muted)' }}>
+                              {i+1}st: ${p}
+                            </span>
+                          ));
+                        })()}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1988,19 +1952,23 @@ function App() {
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
               {/* Executive Top Metrics Bar */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '0.5rem', marginBottom: '0.85rem' }}>
-                <div className="card" style={{ margin: 0, padding: '0.65rem 0.5rem', textAlign: 'center', background: 'var(--chalk-slate)' }}>
-                  <span style={{ fontSize: '0.6rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Total Roster</span>
-                  <span style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--chalk-white)', fontVariantNumeric: 'tabular-nums', display: 'block', marginTop: '2px' }}><SplitFlap value={Object.keys(players).length} />
-                    {Object.keys(players).length}
+                <div className="card stat-card" style={{ margin: 0, padding: '0.5rem 0.25rem', textAlign: 'center', background: 'var(--chalk-slate)' }}>
+                  <span style={{ fontSize: '0.6rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Total Roster</span>
+                  <span style={{ fontSize: '1rem', fontWeight: 900, color: 'var(--chalk-white)', fontVariantNumeric: 'tabular-nums', display: 'block', marginTop: '2px' }}>
+                    <SplitFlap value={Object.keys(players).length} variant="sm" />
                   </span>
                 </div>
-                <div className="card" style={{ margin: 0, padding: '0.65rem 0.5rem', textAlign: 'center', background: 'var(--chalk-slate)', border: '1px solid var(--felt-teal)', boxShadow: 'var(--shadow-sm)' }}>
-                  <span style={{ fontSize: '0.6rem', fontWeight: 800, color: 'var(--felt-teal-light)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Coming Today</span>
-                  <span style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--felt-teal-light)', fontVariantNumeric: 'tabular-nums', display: 'block', marginTop: '2px' }}><SplitFlap value={Object.values(players).filter(p => p.status === 'coming').length} /></span>
+                <div className="card stat-card" style={{ margin: 0, padding: '0.5rem 0.25rem', textAlign: 'center', background: 'var(--chalk-slate)', border: '1px solid var(--chalk-border)', boxShadow: 'var(--shadow-sm)' }}>
+                  <span style={{ fontSize: '0.6rem', fontWeight: 800, color: 'var(--neon-amber)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Coming Today</span>
+                  <span style={{ fontSize: '1rem', fontWeight: 900, color: 'var(--chalk-white)', fontVariantNumeric: 'tabular-nums', display: 'block', marginTop: '2px' }}>
+                    <SplitFlap value={Object.values(players).filter(p => p.status === 'coming').length} variant="sm" />
+                  </span>
                 </div>
-                <div className="card" style={{ margin: 0, padding: '0.65rem 0.5rem', textAlign: 'center', background: 'var(--chalk-slate)', border: '1px solid var(--neon-amber)', boxShadow: 'var(--shadow-sm)' }}>
-                  <span style={{ fontSize: '0.6rem', fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Career Cash</span>
-                  <span style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--neon-amber)', fontVariantNumeric: 'tabular-nums', display: 'block', marginTop: '2px' }}><SplitFlap value={Object.values(players).reduce((sum, p) => sum + (p.earnings || 0), 0)} prefix="$" /></span>
+                <div className="card stat-card" style={{ margin: 0, padding: '0.5rem 0.25rem', textAlign: 'center', background: 'var(--chalk-slate)', border: '1px solid var(--felt-teal)', boxShadow: 'var(--shadow-sm)' }}>
+                  <span style={{ fontSize: '0.6rem', fontWeight: 800, color: 'var(--felt-teal-light)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Career Cash</span>
+                  <span style={{ fontSize: '1rem', fontWeight: 900, color: 'var(--felt-teal-light)', fontVariantNumeric: 'tabular-nums', display: 'block', marginTop: '2px' }}>
+                    <SplitFlap value={Object.values(players).reduce((sum, p) => sum + (p.earnings || 0), 0)} prefix="$" variant="sm" />
+                  </span>
                 </div>
               </div>
 
@@ -2147,8 +2115,8 @@ function App() {
                                   title="Mark as Coming"
                                   style={{ 
                                     padding: '0.3rem 0.5rem', 
-                                    background: p.status === 'coming' ? 'var(--felt-teal)' : 'transparent', 
-                                    color: p.status === 'coming' ? 'var(--chalk-white)' : 'var(--felt-teal-light)', 
+                                    background: p.status === 'coming' ? 'var(--neon-amber)' : 'transparent', 
+                                    color: p.status === 'coming' ? 'var(--on-primary)' : 'var(--neon-amber)', 
                                     borderRadius: 'var(--radius-sm)',
                                     display: 'flex',
                                     alignItems: 'center',
@@ -2213,8 +2181,8 @@ function App() {
                                 fontWeight: 800, 
                                 letterSpacing: '0.03em',
                                 background: p.status === 'coming' ? 'var(--chalk-slate-light)' : 'var(--chalk-slate-dark)',
-                                color: p.status === 'coming' ? 'var(--felt-teal-light)' : 'var(--neon-red)',
-                                border: p.status === 'coming' ? '1px solid var(--felt-teal)' : '1px solid var(--neon-red)',
+                                color: p.status === 'coming' ? 'var(--neon-amber)' : 'var(--neon-red)',
+                                border: p.status === 'coming' ? '1px solid var(--neon-amber)' : '1px solid var(--neon-red)',
                                 boxShadow: 'none'
                               }}>
                                 {p.status === 'coming' ? (

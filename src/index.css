@@ -349,7 +349,7 @@ body {
 }
 
 .player-glass-card.status-coming {
-  border-left: 3px solid var(--felt-teal);
+  border-left: 3px solid var(--neon-amber);
 }
 
 .player-glass-card.status-out {
@@ -454,6 +454,24 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-weight: 700;
+}
+
+.stat-card {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.stat-card .split-flap-container {
+  font-size: 0.95rem;
+}
+
+@media (max-width: 420px) {
+  .stat-card {
+    padding: 0.45rem 0.2rem !important;
+  }
+  .stat-card .split-flap-container {
+    font-size: 0.85rem;
+  }
 }
 
 /* Back-Bar Floating Bottom Nav Island */
@@ -695,9 +713,9 @@ body {
 }
 
 .payout-1 { 
-  background-color: var(--felt-teal); 
-  color: #FFFFFF; 
-  border: 1px solid var(--felt-teal-light);
+  background-color: var(--neon-amber); 
+  color: var(--on-primary); 
+  border: 1px solid var(--neon-amber);
 }
 
 .payout-2 { 
@@ -885,7 +903,7 @@ body {
   .bracket-nav-group {
     order: 1;
     gap: 0.35rem;
-    max-width: calc(100% - 105px);
+    max-width: calc(100% - 145px);
     min-width: 0;
   }
 

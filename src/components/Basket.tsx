@@ -150,21 +150,22 @@ export const Basket: React.FC<BasketProps> = ({
           style={{
             display: 'flex',
             flexWrap: 'wrap',
-            gap: '8px',
+            gap: size < 60 ? '3px' : '8px',
             alignItems: 'center',
             justifyContent: 'center',
-            marginTop: '4px',
-            padding: '4px 8px',
+            marginTop: size < 60 ? '2px' : '4px',
+            padding: size < 60 ? '2px 4px' : '4px 8px',
             background: 'var(--chalk-slate)',
             border: '1px solid var(--chalk-border)',
             borderRadius: 'var(--radius-sm)',
+            maxWidth: size < 60 ? '70px' : undefined,
           }}
         >
           {groups.map((count, gIdx) => (
             <svg
               key={gIdx}
-              width="32"
-              height="20"
+              width={size < 60 ? 20 : 32}
+              height={size < 60 ? 12 : 20}
               viewBox="0 0 32 20"
               style={{ overflow: 'visible' }}
             >
