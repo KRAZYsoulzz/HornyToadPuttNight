@@ -9,9 +9,12 @@ import { getTheme, setTheme, type Theme } from './theme/theme'
 import { generateBracket, calculatePayouts, getTournamentEntryFee, getTournamentPot, getTournamentLabel } from './logic/tournament'
 import type { TournamentConfig, Player, Match } from './logic/tournament'
 import { supabase } from './lib/supabase'
+import { useAdmin } from './lib/auth'
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch'
 import { HornyToadLogo } from './components/HornyToadLogo'
 import './index.css'
+
+const VIEW_ONLY_HINT = 'View only. Directors sign in under Config to score.'
 
 const isToday = (timestamp: number) => {
   const date = new Date(timestamp)
@@ -48,9 +51,12 @@ function App() {
   const [byeNewPlayerName, setByeNewPlayerName] = useState('')
   const [byeSearchQuery, setByeSearchQuery] = useState('')
   const [byeActiveTab, setByeActiveTab] = useState<'existing' | 'new'>('existing')
-  const [isAdmin, setIsAdmin] = useState(() => localStorage.getItem('puttNightAdmin') === 'true')
+  const { isAdmin, email: adminEmail, signIn, signOut } = useAdmin()
+  const [directorUsername, setDirectorUsername] = useState('')
+  const [directorPassword, setDirectorPassword] = useState('')
+  const [directorLoginError, setDirectorLoginError] = useState<string | null>(null)
+  const [isSigningIn, setIsSigningIn] = useState(false)
   const cancelTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const [loginCode, setLoginCode] = useState('')
   const [newPlayerName, setNewPlayerName] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedH2HPlayerId, setSelectedH2HPlayerId] = useState<string | null>(null)
@@ -281,8 +287,14 @@ function App() {
         } else {
           // Self-heal: deactivate old zombie tournaments from previous sessions
           setActiveTournament(null)
-          await supabase.from('tournaments').update({ is_active: false }).eq('id', active.id)
-          await fetchData()
+          if (isAdmin) {
+            const { error: zErr } = await supabase.from('tournaments').update({ is_active: false }).eq('id', active.id)
+            if (zErr) {
+              console.error("Error deactivating zombie tournament:", zErr)
+            } else {
+              await fetchData()
+            }
+          }
         }
       } else {
         setActiveTournament(null)
@@ -344,10 +356,6 @@ function App() {
     }, 0)
     return Math.max(100, maxLen * 8 + 30)
   }, [activeTournament, viewingPastTourney, players])
-
-  useEffect(() => {
-    localStorage.setItem('puttNightAdmin', isAdmin.toString())
-  }, [isAdmin])
 
   useEffect(() => {
     if (activeTournament && view === 'home' && !hasManuallyLeftBracket.current) {
@@ -443,7 +451,11 @@ function App() {
   }, [activeTournament])
 
   const handleShuffleBracket = async () => {
-    if (!activeTournament || tourneyHasStarted || !isAdmin) return
+    if (!isAdmin) {
+      alert(VIEW_ONLY_HINT)
+      return
+    }
+    if (!activeTournament || tourneyHasStarted) return
     haptic('success')
     const newMatches = generateBracket(activeTournament.config, players)
 
@@ -461,6 +473,10 @@ function App() {
     slotA: { matchId: string; slot: 'p1' | 'p2'; playerId: string },
     slotB: { matchId: string; slot: 'p1' | 'p2'; playerId: string }
   ) => {
+    if (!isAdmin) {
+      alert(VIEW_ONLY_HINT)
+      return
+    }
     if (!activeTournament) return
     haptic('success')
 
@@ -519,7 +535,11 @@ function App() {
 
   // Feature: Add Player to a Round 1 Bye Slot
   const handleAddPlayerToBye = async (matchId: string, newPlayerId: string) => {
-    if (!activeTournament || !isAdmin) return
+    if (!isAdmin) {
+      alert(VIEW_ONLY_HINT)
+      return
+    }
+    if (!activeTournament) return
     const match = activeTournament.matches.find(m => m.id === matchId)
     if (!match || match.round !== 1 || match.score !== 'BYE') return
 
@@ -528,7 +548,7 @@ function App() {
 
     const emptySlot = match.player1Id ? 'player2Id' : 'player1Id'
 
-    let updatedMatches = activeTournament.matches.map(m => {
+    const updatedMatches = activeTournament.matches.map(m => {
       // 1. Fill the bye slot and clear the automatic win / BYE score
       if (m.id === matchId) {
         return {
@@ -601,6 +621,10 @@ function App() {
   }
 
   const handleConfirmAddPlayerToBye = async () => {
+    if (!isAdmin) {
+      alert(VIEW_ONLY_HINT)
+      return
+    }
     if (!selectedByeMatchId) return
     let targetPlayerId = byeSelectedPlayerId
 
@@ -610,12 +634,22 @@ function App() {
       const newId = Math.random().toString(36).substring(2, 9)
       const newPlayer: Player = { id: newId, name, wins: 0, losses: 0, earnings: 0, history: [], status: 'coming' }
       setPlayers(prev => ({ ...prev, [newId]: newPlayer }))
-      await supabase.from('players').insert(newPlayer)
+      const { error: insErr } = await supabase.from('players').insert(newPlayer)
+      if (insErr) {
+        alert('Error adding player: ' + insErr.message)
+        fetchData()
+        return
+      }
       targetPlayerId = newId
     } else {
       if (!targetPlayerId) return
       if (players[targetPlayerId]?.status !== 'coming') {
-        await supabase.from('players').update({ status: 'coming' }).eq('id', targetPlayerId)
+        const { error: upErr } = await supabase.from('players').update({ status: 'coming' }).eq('id', targetPlayerId)
+        if (upErr) {
+          alert('Error updating player status: ' + upErr.message)
+          fetchData()
+          return
+        }
         setPlayers(prev => ({ ...prev, [targetPlayerId!]: { ...prev[targetPlayerId!], status: 'coming' } }))
       }
     }
@@ -627,58 +661,88 @@ function App() {
 
   // Attendance and Player Status
   const handleSetStatus = async (id: string, status: Player['status']) => {
+    if (!isAdmin) {
+      alert(VIEW_ONLY_HINT)
+      return
+    }
     const p = players[id]
     if (!p) return
     haptic('light')
     const nextStatus = p.status === status ? null : status
-    await supabase.from('players').update({ status: nextStatus }).eq('id', id)
+    const { error } = await supabase.from('players').update({ status: nextStatus }).eq('id', id)
+    if (error) {
+      alert('Error updating player status: ' + error.message)
+      fetchData()
+      return
+    }
     setPlayers(prev => ({ ...prev, [id]: { ...p, status: nextStatus } }))
   }
 
-  const submitLogin = () => {
-    if (loginCode.trim().toLowerCase() === 'bacon') {
-      setIsAdmin(true)
-      setLoginCode('')
-      haptic('success')
+  const resetAllAttendance = async () => {
+    if (!isAdmin) {
+      alert(VIEW_ONLY_HINT)
+      return
+    }
+    if (!confirm("Clear attendance (Coming / Out status) for all players? All player stats, wins, and earnings will remain untouched.")) return
+    const { error } = await supabase.from('players').update({ status: null }).neq('id', '_')
+    if (error) {
+      alert('Error clearing attendance: ' + error.message)
+      fetchData()
     } else {
-      alert('Wrong code!')
+      fetchData()
     }
   }
 
-  const resetAllAttendance = async () => {
-    if (!isAdmin) return
-    if (!confirm("Clear attendance (Coming / Out status) for all players? All player stats, wins, and earnings will remain untouched.")) return
-    const { error } = await supabase.from('players').update({ status: null }).neq('id', '_')
-    if (error) alert('Error clearing attendance: ' + error.message)
-    else fetchData()
-  }
-
   const resetAllStats = async () => {
-    if (!isAdmin) return
+    if (!isAdmin) {
+      alert(VIEW_ONLY_HINT)
+      return
+    }
     const { error } = await supabase.from('players').update({ 
       wins: 0, 
       losses: 0, 
       earnings: 0, 
       history: [] 
     }).neq('id', '_')
-    if (error) alert('Error resetting stats: ' + error.message)
-    else fetchData()
+    if (error) {
+      alert('Error resetting stats: ' + error.message)
+      fetchData()
+    } else {
+      fetchData()
+    }
   }
 
   const addPlayer = async (name: string) => {
+    if (!isAdmin) {
+      alert(VIEW_ONLY_HINT)
+      return
+    }
     if (!name.trim()) return
     const id = Math.random().toString(36).substring(2, 9)
     const newPlayer: Player = { id, name: name.trim(), wins: 0, losses: 0, earnings: 0, history: [], status: null }
     setPlayers(prev => ({ ...prev, [id]: newPlayer }))
     setNewPlayerName('')
-    await supabase.from('players').insert(newPlayer)
+    const { error } = await supabase.from('players').insert(newPlayer)
+    if (error) {
+      alert('Error adding player: ' + error.message)
+      fetchData()
+      return
+    }
     haptic('success')
   }
 
   const deletePlayer = async (id: string) => {
+    if (!isAdmin) {
+      alert(VIEW_ONLY_HINT)
+      return
+    }
     const { error } = await supabase.from('players').delete().eq('id', id)
-    if (error) alert('Error deleting: ' + error.message)
-    else fetchData()
+    if (error) {
+      alert('Error deleting: ' + error.message)
+      fetchData()
+    } else {
+      fetchData()
+    }
     setConfirmDeletePlayerId(null)
   }
 
@@ -691,6 +755,10 @@ function App() {
     earnings: number;
     status: 'coming' | 'out' | null;
   }) => {
+    if (!isAdmin) {
+      alert(VIEW_ONLY_HINT)
+      return
+    }
     if (!updated.name.trim()) return
     haptic('success')
     const { error } = await supabase.from('players').update({
@@ -703,6 +771,7 @@ function App() {
 
     if (error) {
       alert('Error updating player stats: ' + error.message)
+      fetchData()
     } else {
       setPlayers(prev => ({
         ...prev,
@@ -720,6 +789,10 @@ function App() {
   }
 
   const handleMergeProfiles = async (primaryId: string, secondaryId: string) => {
+    if (!isAdmin) {
+      alert(VIEW_ONLY_HINT)
+      return
+    }
     if (!primaryId || !secondaryId || primaryId === secondaryId) {
       return alert('Please select two distinct player profiles to merge.')
     }
@@ -755,10 +828,22 @@ function App() {
           return supabase.from('players').update({ history: rewritten }).eq('id', p.id)
         })
 
-      await Promise.all(otherPlayerUpdates)
+      const pResults = await Promise.all(otherPlayerUpdates)
+      for (const res of pResults) {
+        if (res && res.error) {
+          alert('Error updating player history: ' + res.error.message)
+          fetchData()
+          return
+        }
+      }
 
       // 3. Rewrite active and past tournaments
-      const { data: allTourneys } = await supabase.from('tournaments').select('*')
+      const { data: allTourneys, error: tFetchErr } = await supabase.from('tournaments').select('*')
+      if (tFetchErr) {
+        alert('Error fetching tournaments: ' + tFetchErr.message)
+        fetchData()
+        return
+      }
       if (allTourneys && allTourneys.length > 0) {
         const tourneyUpdates = allTourneys.map(async t => {
           let modified = false
@@ -797,19 +882,36 @@ function App() {
           }
           return null
         })
-        await Promise.all(tourneyUpdates)
+        const tResults = await Promise.all(tourneyUpdates)
+        for (const res of tResults) {
+          if (res && res.error) {
+            alert('Error updating tournaments during merge: ' + res.error.message)
+            fetchData()
+            return
+          }
+        }
       }
 
       // 4. Update primary player in Supabase
-      await supabase.from('players').update({
+      const { error: primErr } = await supabase.from('players').update({
         wins: combinedWins,
         losses: combinedLosses,
         earnings: combinedEarnings,
         history: combinedHistory
       }).eq('id', primaryId)
+      if (primErr) {
+        alert('Error updating primary player: ' + primErr.message)
+        fetchData()
+        return
+      }
 
       // 5. Delete secondary player
-      await supabase.from('players').delete().eq('id', secondaryId)
+      const { error: delErr } = await supabase.from('players').delete().eq('id', secondaryId)
+      if (delErr) {
+        alert('Error removing secondary player: ' + delErr.message)
+        fetchData()
+        return
+      }
 
       haptic('success')
       setShowMergeModal(false)
@@ -820,6 +922,7 @@ function App() {
     } catch (err: any) {
       console.error("Error merging profiles:", err)
       alert("Error merging profiles: " + err.message)
+      fetchData()
     } finally {
       setIsMerging(false)
     }
@@ -827,10 +930,19 @@ function App() {
 
   // --- TOURNAMENT CREATION ---
   const handleStartTournament = async () => {
+    if (!isAdmin) {
+      alert(VIEW_ONLY_HINT)
+      return
+    }
     if (config.players.length < 2) return alert('Select at least 2 players')
     
     // Deactivate any existing active tournaments first
-    await supabase.from('tournaments').update({ is_active: false }).eq('is_active', true)
+    const { error: deactErr } = await supabase.from('tournaments').update({ is_active: false }).eq('is_active', true)
+    if (deactErr) {
+      alert('Error updating tournament: ' + deactErr.message)
+      fetchData()
+      return
+    }
 
     const matches = generateBracket(config, players)
     const newId = Date.now().toString()
@@ -847,18 +959,29 @@ function App() {
       is_active: true
     }).select()
 
-    if (error) alert(`Error starting: ${error.message} (ID: ${newId})`)
-    else if (data) {
+    if (error) {
+      alert(`Error starting: ${error.message} (ID: ${newId})`)
+      fetchData()
+    } else if (data) {
       setActiveTournament({ config: normalizedConfig, matches, id: data[0].id, created_at: data[0].created_at })
       setView('bracket')
     }
   }
 
   const quickStartComing = async () => {
+    if (!isAdmin) {
+      alert(VIEW_ONLY_HINT)
+      return
+    }
     const comingIds = Object.values(players).filter(p => p.status === 'coming').map(p => p.id);
     if (comingIds.length < 2) return alert('At least 2 players must be marked as "Coming" (green)');
     
-    await supabase.from('tournaments').update({ is_active: false }).eq('is_active', true)
+    const { error: deactErr } = await supabase.from('tournaments').update({ is_active: false }).eq('is_active', true)
+    if (deactErr) {
+      alert('Error updating tournament: ' + deactErr.message)
+      fetchData()
+      return
+    }
 
     const entryFee = getTournamentEntryFee(config)
     const newConfig: TournamentConfig = { ...config, players: comingIds, entryFee }
@@ -870,19 +993,35 @@ function App() {
       matches,
       is_active: true
     }).select();
-    if (error) alert(`Error starting: ${error.message} (ID: ${newId})`);
-    else if (data) {
+    if (error) {
+      alert(`Error starting: ${error.message} (ID: ${newId})`);
+      fetchData();
+    } else if (data) {
       setActiveTournament({ config: newConfig, matches, id: data[0].id, created_at: data[0].created_at });
       setView('bracket');
     }
   }
 
   const quickStartLast = async () => {
-    const { data: tData } = await supabase.from('tournaments').select('config').order('created_at', { ascending: false }).limit(1);
+    if (!isAdmin) {
+      alert(VIEW_ONLY_HINT)
+      return
+    }
+    const { data: tData, error: tFetchErr } = await supabase.from('tournaments').select('config').order('created_at', { ascending: false }).limit(1);
+    if (tFetchErr) {
+      alert('Error fetching last tournament: ' + tFetchErr.message)
+      fetchData()
+      return
+    }
     if (tData && tData[0]?.config?.players) {
       const lastIds = tData[0].config.players;
 
-      await supabase.from('tournaments').update({ is_active: false }).eq('is_active', true)
+      const { error: deactErr } = await supabase.from('tournaments').update({ is_active: false }).eq('is_active', true)
+      if (deactErr) {
+        alert('Error updating tournament: ' + deactErr.message)
+        fetchData()
+        return
+      }
 
       const entryFee = getTournamentEntryFee(config)
       const newConfig: TournamentConfig = { ...config, players: lastIds, entryFee }
@@ -893,8 +1032,10 @@ function App() {
         matches,
         is_active: true
       }).select();
-      if (error) alert(error.message);
-      else if (nData) {
+      if (error) {
+        alert(error.message);
+        fetchData();
+      } else if (nData) {
         setActiveTournament({ config: newConfig, matches: matches, id: nData[0].id, created_at: nData[0].created_at });
         setView('bracket');
       }
@@ -927,6 +1068,10 @@ function App() {
   }
 
   const handleAdvance = async (matchId: string, winnerId: string, score: string) => {
+    if (!isAdmin) {
+      alert(VIEW_ONLY_HINT)
+      return
+    }
     if (!activeTournament) return
     const match = activeTournament.matches.find(m => m.id === matchId)
     if (!match || match.winnerId) return
@@ -963,7 +1108,7 @@ function App() {
       if (p1 && p2) {
         const p1Won = winnerId === p1.id
         const p2Won = winnerId === p2.id
-        await Promise.all([
+        const results = await Promise.all([
           supabase.from('players').update({ 
             history: [...(p1.history || []), `${p2.id}:${p1Won ? 'W' : 'L'}`],
             losses: (p1.losses || 0) + (p1Won ? 0 : 1)
@@ -973,6 +1118,12 @@ function App() {
             losses: (p2.losses || 0) + (p2Won ? 0 : 1)
           }).eq('id', p2.id)
         ])
+        for (const r of results) {
+          if (r.error) {
+            alert('Error updating player stats: ' + r.error.message)
+            fetchData()
+          }
+        }
         setPlayers(prev => ({
           ...prev,
           [p1.id]: { ...p1, history: [...(p1.history || []), `${p2.id}:${p1Won ? 'W' : 'L'}`], losses: (p1.losses || 0) + (p1Won ? 0 : 1) },
@@ -983,6 +1134,10 @@ function App() {
   }
 
   const handleUndo = async (matchId: string) => {
+    if (!isAdmin) {
+      alert(VIEW_ONLY_HINT)
+      return
+    }
     if (!activeTournament) return
     const match = activeTournament.matches.find(m => m.id === matchId)
     if (!match || !match.winnerId) return
@@ -1020,6 +1175,10 @@ function App() {
 
   // --- PAST TOURNAMENT MATCH ADVANCE & UNDO (WITH STAT SYNC) ---
   const handleAdvancePastTournament = async (tourney: any, matchId: string, winnerId: string, score: string) => {
+    if (!isAdmin) {
+      alert(VIEW_ONLY_HINT)
+      return
+    }
     const match = tourney.matches.find((m: Match) => m.id === matchId)
     if (!match || match.winnerId) return
 
@@ -1045,7 +1204,12 @@ function App() {
     setViewingPastTourney(updatedTourney)
     haptic('medium')
 
-    await supabase.from('tournaments').update({ matches: updatedMatches }).eq('id', tourney.id)
+    const { error: tErr } = await supabase.from('tournaments').update({ matches: updatedMatches }).eq('id', tourney.id)
+    if (tErr) {
+      alert('Error updating tournament: ' + tErr.message)
+      fetchData()
+      return
+    }
 
     // Update match history and losses for active players
     if (match.player1Id && match.player2Id) {
@@ -1054,7 +1218,7 @@ function App() {
       if (p1 && p2) {
         const p1Won = winnerId === p1.id
         const p2Won = winnerId === p2.id
-        await Promise.all([
+        const results = await Promise.all([
           supabase.from('players').update({ 
             history: [...(p1.history || []), `${p2.id}:${p1Won ? 'W' : 'L'}`],
             losses: (p1.losses || 0) + (p1Won ? 0 : 1)
@@ -1064,6 +1228,12 @@ function App() {
             losses: (p2.losses || 0) + (p2Won ? 0 : 1)
           }).eq('id', p2.id)
         ])
+        for (const r of results) {
+          if (r.error) {
+            alert('Error updating player stats: ' + r.error.message)
+            fetchData()
+          }
+        }
       }
     }
 
@@ -1074,10 +1244,14 @@ function App() {
       const payouts = calculatePayouts(pot, tourney.config.addedCash, tourney.config.payoutSplits)
       const winner = players[winnerId]
       if (winner) {
-        await supabase.from('players').update({
+        const { error: wErr } = await supabase.from('players').update({
           wins: (winner.wins || 0) + 1,
           earnings: (winner.earnings || 0) + (payouts[0] || 0)
         }).eq('id', winnerId)
+        if (wErr) {
+          alert('Error updating winner stats: ' + wErr.message)
+          fetchData()
+        }
       }
     }
 
@@ -1085,6 +1259,10 @@ function App() {
   }
 
   const handleUndoPastTournament = async (matchId: string) => {
+    if (!isAdmin) {
+      alert(VIEW_ONLY_HINT)
+      return
+    }
     if (!viewingPastTourney) return
     const match = viewingPastTourney.matches.find((m: Match) => m.id === matchId)
     if (!match || !match.winnerId) return
@@ -1114,7 +1292,12 @@ function App() {
     setViewingPastTourney(updatedTourney)
     haptic('medium')
 
-    await supabase.from('tournaments').update({ matches: updatedMatches }).eq('id', viewingPastTourney.id)
+    const { error: tErr } = await supabase.from('tournaments').update({ matches: updatedMatches }).eq('id', viewingPastTourney.id)
+    if (tErr) {
+      alert('Error updating tournament: ' + tErr.message)
+      fetchData()
+      return
+    }
 
     // Rollback championship win/payout if it was championship
     if (isChampionship) {
@@ -1123,10 +1306,14 @@ function App() {
       const payouts = calculatePayouts(pot, viewingPastTourney.config.addedCash, viewingPastTourney.config.payoutSplits)
       const winner = players[winnerId]
       if (winner) {
-        await supabase.from('players').update({
+        const { error: wErr } = await supabase.from('players').update({
           wins: Math.max(0, (winner.wins || 0) - 1),
           earnings: Math.max(0, (winner.earnings || 0) - (payouts[0] || 0))
         }).eq('id', winnerId)
+        if (wErr) {
+          alert('Error updating winner stats: ' + wErr.message)
+          fetchData()
+        }
       }
     }
 
@@ -1136,6 +1323,10 @@ function App() {
 
   // --- FINISH ACTIVE TOURNAMENT ---
   const handleFinishTournament = async () => {
+    if (!isAdmin) {
+      alert(VIEW_ONLY_HINT)
+      return
+    }
     if (!activeTournament) return
     const finalMatch = activeTournament.matches.find(m => m.nextMatchId === null && !m.isConsolation)
     if (!finalMatch || !finalMatch.winnerId) return
@@ -1156,16 +1347,39 @@ function App() {
       }).eq('id', winnerId)
 
       try {
-        await Promise.all([tUpdate, pUpdate])
+        const [tRes, pRes] = await Promise.all([tUpdate, pUpdate])
+        if (tRes.error) {
+          alert('Error finalizing tournament: ' + tRes.error.message)
+          fetchData()
+          return
+        }
+        if (pRes.error) {
+          alert('Error updating winner stats: ' + pRes.error.message)
+          fetchData()
+          return
+        }
       } catch (err) {
         console.error("Error finalizing tournament:", err)
+        const msg = err instanceof Error ? err.message : String(err)
+        alert("Error finalizing tournament: " + msg)
+        fetchData()
+        return
       }
       setShowFinishSummary({ winner: winner.name, payout: payouts[0] || 0 })
     } else {
       try {
-        await tUpdate
+        const { error } = await tUpdate
+        if (error) {
+          alert('Error finalizing tournament: ' + error.message)
+          fetchData()
+          return
+        }
       } catch (err) {
         console.error("Error finalizing tournament:", err)
+        const msg = err instanceof Error ? err.message : String(err)
+        alert("Error finalizing tournament: " + msg)
+        fetchData()
+        return
       }
       setShowFinishSummary({ winner: winnerId, payout: payouts[0] || 0 })
     }
@@ -1177,6 +1391,10 @@ function App() {
 
   // --- ACTIVE & PAST TOURNAMENT CONFIG EDITING (WITH PAYOUT STAT SYNC) ---
   const handleSaveActiveTourneyConfig = async (newFee: number, newCash: number) => {
+    if (!isAdmin) {
+      alert(VIEW_ONLY_HINT)
+      return
+    }
     if (!activeTournament) return
     haptic('success')
     const updatedConfig: TournamentConfig = {
@@ -1203,6 +1421,10 @@ function App() {
     payoutPlaces: number;
     payoutSplits: number[];
   }) => {
+    if (!isAdmin) {
+      alert(VIEW_ONLY_HINT)
+      return
+    }
     const oldTourney = pastTournaments.find(t => t.id === form.id)
     if (!oldTourney) return
     haptic('success')
@@ -1226,7 +1448,12 @@ function App() {
       const delta1st = (newPayouts[0] || 0) - (oldPayouts[0] || 0)
       if (delta1st !== 0) {
         const newEarnings = Math.max(0, (players[winnerId].earnings || 0) + delta1st)
-        await supabase.from('players').update({ earnings: newEarnings }).eq('id', winnerId)
+        const { error: earnErr } = await supabase.from('players').update({ earnings: newEarnings }).eq('id', winnerId)
+        if (earnErr) {
+          alert('Error updating player earnings: ' + earnErr.message)
+          fetchData()
+          return
+        }
       }
     }
 
@@ -1242,6 +1469,7 @@ function App() {
     const { error } = await supabase.from('tournaments').update({ config: updatedConfig }).eq('id', form.id)
     if (error) {
       alert('Error updating tournament: ' + error.message)
+      fetchData()
     } else {
       setEditingPastTourneyConfig(null)
       if (viewingPastTourney && viewingPastTourney.id === form.id) {
@@ -1253,6 +1481,10 @@ function App() {
 
   // --- DELETE PAST TOURNAMENT (WITH STAT ROLLBACK) ---
   const handleDeletePastTournament = async (tourney: any, rollback: boolean) => {
+    if (!isAdmin) {
+      alert(VIEW_ONLY_HINT)
+      return
+    }
     if (!tourney) return
     haptic('heavy')
 
@@ -1268,7 +1500,12 @@ function App() {
 
         const newWins = Math.max(0, (players[winnerId].wins || 0) - 1)
         const newEarnings = Math.max(0, (players[winnerId].earnings || 0) - firstPayout)
-        await supabase.from('players').update({ wins: newWins, earnings: newEarnings }).eq('id', winnerId)
+        const { error: winRollErr } = await supabase.from('players').update({ wins: newWins, earnings: newEarnings }).eq('id', winnerId)
+        if (winRollErr) {
+          alert('Error rolling back winner stats: ' + winRollErr.message)
+          fetchData()
+          return
+        }
       }
 
       // 2. Rollback match losses from played matches in this tournament
@@ -1277,7 +1514,12 @@ function App() {
         const loserId = m.winnerId === m.player1Id ? m.player2Id! : m.player1Id!
         if (players[loserId]) {
           const currentLosses = players[loserId].losses || 0
-          await supabase.from('players').update({ losses: Math.max(0, currentLosses - 1) }).eq('id', loserId)
+          const { error: lossRollErr } = await supabase.from('players').update({ losses: Math.max(0, currentLosses - 1) }).eq('id', loserId)
+          if (lossRollErr) {
+            alert('Error rolling back player losses: ' + lossRollErr.message)
+            fetchData()
+            return
+          }
         }
       }
     }
@@ -1285,12 +1527,31 @@ function App() {
     const { error } = await supabase.from('tournaments').delete().eq('id', tourney.id)
     if (error) {
       alert('Error deleting tournament: ' + error.message)
+      fetchData()
     } else {
       setConfirmDeleteTourney(null)
       if (viewingPastTourney && viewingPastTourney.id === tourney.id) {
         setViewingPastTourney(null)
       }
       await fetchData()
+    }
+  }
+
+  const handleCancelActiveTournament = async () => {
+    if (!isAdmin) {
+      alert(VIEW_ONLY_HINT)
+      return
+    }
+    if (!activeTournament) return
+    const { error } = await supabase.from('tournaments').delete().eq('id', activeTournament.id)
+    if (error) {
+      alert('Error cancelling tournament: ' + error.message)
+      fetchData()
+    } else {
+      setActiveTournament(null)
+      setConfirmCancel(false)
+      setView('home')
+      fetchData()
     }
   }
 
@@ -1547,6 +1808,24 @@ function App() {
             </div>
           </div>
         </header>
+      )}
+
+      {!isAdmin && view !== 'bracket' && !viewingPastTourney && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+          background: 'var(--chalk-slate)',
+          border: '1px solid var(--chalk-border)',
+          borderRadius: 'var(--radius-sm)',
+          padding: '0.55rem 0.85rem',
+          fontSize: '0.8rem',
+          color: 'var(--chalk-dim)',
+          marginBottom: '1rem',
+        }}>
+          <Info size={16} className="accent-text" style={{ flexShrink: 0 }} />
+          <span>View only. Directors sign in under Config to score.</span>
+        </div>
       )}
 
       <main style={{ paddingBottom: '80px' }}>
@@ -1917,6 +2196,24 @@ function App() {
                       </div>
                     </div>
                   </div>
+                  {!isAdmin && (
+                    <div style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.45rem',
+                      background: 'var(--chalk-slate)',
+                      border: '1px solid var(--chalk-border)',
+                      borderRadius: 'var(--radius-sm)',
+                      padding: '0.4rem 0.75rem',
+                      fontSize: '0.75rem',
+                      color: 'var(--chalk-dim)',
+                      marginTop: '0.5rem',
+                      pointerEvents: 'auto',
+                    }}>
+                      <Info size={14} className="accent-text" style={{ flexShrink: 0 }} />
+                      <span>View only. Directors sign in under Config to score.</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -2341,6 +2638,24 @@ function App() {
                {isAdmin ? (
                  <>
                    <div className="card">
+                     <div className="card-title"><LockOpen size={20} className="accent-text" /> Director Sign-in</div>
+                     <p style={{ fontSize: '0.85rem', marginBottom: '1rem', color: 'var(--chalk-dim)' }}>
+                       Signed in as <strong style={{ color: 'var(--chalk-white)' }}>{adminEmail}</strong>
+                     </p>
+                     <button
+                       type="button"
+                       className="btn btn-secondary"
+                       style={{ width: '100%', border: '1px solid var(--chalk-border)' }}
+                       onClick={async () => {
+                         haptic()
+                         await signOut()
+                       }}
+                     >
+                       Sign out
+                     </button>
+                   </div>
+
+                   <div className="card">
                      <div className="card-title"><Settings2 size={20} className="accent-text" /> Tournament Defaults</div>
                      <div className="option-group">
                        <label>Default Added Cash</label>
@@ -2386,35 +2701,74 @@ function App() {
                         {activeTournament && (
                           <button className="btn" style={{ width: '100%', background: 'var(--neon-red)', color: 'var(--chalk-white)', border: '1px solid var(--neon-red)' }} onClick={async () => {
                             if(confirm("DELETE current tournament permanently? This cannot be undone.")) {
-                              await supabase.from('tournaments').delete().eq('id', activeTournament.id);
-                              setActiveTournament(null);
-                              setView('home');
+                              await handleCancelActiveTournament();
                             }
                           }}>Delete Current Tournament</button>
                         )}
                      </div>
                    </div>
-
-                   <button className="btn btn-secondary" style={{ width: '100%', marginTop: '1rem', border: '1px solid var(--chalk-border)' }} onClick={() => setIsAdmin(false)}>
-                     LOGOUT ADMIN
-                   </button>
                  </>
                ) : (
                   <div className="card">
-                    <div className="card-title"><LockIcon size={20} className="accent-text" /> Admin Access</div>
-                    <p style={{ fontSize: '0.8rem', opacity: 0.6, marginBottom: '1.5rem' }}>Enter password to unlock tournament configuration and administrative controls.</p>
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <input 
-                        type="password" 
-                        className="input" 
-                        placeholder="Password" 
-                        value={loginCode} 
-                        onChange={e => setLoginCode(e.target.value)} 
-                        onKeyPress={e => e.key === 'Enter' && submitLogin()}
-                        style={{ flex: 1 }}
-                      />
-                      <button className="btn btn-primary" onClick={submitLogin}>UNLOCK</button>
-                    </div>
+                    <div className="card-title"><LockIcon size={20} className="accent-text" /> Director sign-in</div>
+                    <p style={{ fontSize: '0.8rem', opacity: 0.7, marginBottom: '1.25rem' }}>Enter director username or email to unlock administrative controls and tournament scoring.</p>
+                    <form onSubmit={async (e) => {
+                      e.preventDefault()
+                      setDirectorLoginError(null)
+                      setIsSigningIn(true)
+                      const err = await signIn(directorUsername, directorPassword)
+                      setIsSigningIn(false)
+                      if (err) {
+                        setDirectorLoginError(err)
+                      } else {
+                        setDirectorPassword('')
+                      }
+                    }}>
+                      <div className="option-group">
+                        <label>Username or Email</label>
+                        <input 
+                          type="text" 
+                          className="input" 
+                          placeholder="admin or name@example.com" 
+                          value={directorUsername} 
+                          onChange={e => {
+                            setDirectorUsername(e.target.value)
+                            if (directorLoginError) setDirectorLoginError(null)
+                          }}
+                          autoCapitalize="none"
+                          autoCorrect="off"
+                          spellCheck={false}
+                          required
+                        />
+                      </div>
+                      <div className="option-group">
+                        <label>Password</label>
+                        <input 
+                          type="password" 
+                          className="input" 
+                          placeholder="Password" 
+                          value={directorPassword} 
+                          onChange={e => {
+                            setDirectorPassword(e.target.value)
+                            if (directorLoginError) setDirectorLoginError(null)
+                          }}
+                          required
+                        />
+                      </div>
+                      {directorLoginError && (
+                        <p style={{ color: 'var(--neon-red)', fontSize: '0.85rem', marginBottom: '1rem', fontWeight: 600 }}>
+                          {directorLoginError}
+                        </p>
+                      )}
+                      <button 
+                        type="submit" 
+                        className="btn btn-primary" 
+                        style={{ width: '100%' }}
+                        disabled={isSigningIn}
+                      >
+                        {isSigningIn ? 'Signing in...' : 'Sign in'}
+                      </button>
+                    </form>
                   </div>
                )}
 
@@ -2957,6 +3311,24 @@ function App() {
                       </div>
                     </div>
                   </div>
+                  {!isAdmin && (
+                    <div style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.45rem',
+                      background: 'var(--chalk-slate)',
+                      border: '1px solid var(--chalk-border)',
+                      borderRadius: 'var(--radius-sm)',
+                      padding: '0.4rem 0.75rem',
+                      fontSize: '0.75rem',
+                      color: 'var(--chalk-dim)',
+                      marginTop: '0.5rem',
+                      pointerEvents: 'auto',
+                    }}>
+                      <Info size={14} className="accent-text" style={{ flexShrink: 0 }} />
+                      <span>View only. Directors sign in under Config to score.</span>
+                    </div>
+                  )}
                 </div>
                 <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
                   {renderBracket(viewingPastTourney)}
@@ -3046,7 +3418,7 @@ function App() {
                 <h3 className="card-title">Cancel?</h3>
                 <div style={{ display: 'flex', gap: '1rem' }}>
                   <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setConfirmCancel(false)}>No</button>
-                  <button className="btn" style={{ flex: 1, background: 'var(--neon-red)', color: 'var(--chalk-white)', border: '1px solid var(--neon-red)' }} onClick={async () => { await supabase.from('tournaments').delete().eq('id', activeTournament?.id); setConfirmCancel(false); setView('home'); }}>Yes, Cancel</button>
+                  <button className="btn" style={{ flex: 1, background: 'var(--neon-red)', color: 'var(--chalk-white)', border: '1px solid var(--neon-red)' }} onClick={async () => { await handleCancelActiveTournament(); }}>Yes, Cancel</button>
                 </div>
               </div>
             </motion.div>
