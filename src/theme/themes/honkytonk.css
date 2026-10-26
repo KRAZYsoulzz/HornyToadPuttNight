@@ -1,0 +1,231 @@
+[data-theme="honkytonk"] {
+  /* Honky Tonk Master Palette */
+  --bar-black: #F4EAD4;
+  --bar-black-elevated: #EDE0C7;
+  --chalk-slate: #FAF4E8;
+  --chalk-slate-light: #F0E2C6;
+  --chalk-slate-dark: #E8D9BA;
+  --chalk-slate-hover: #F2E5CB;
+  --chalk-border: #D1BA94;
+  --chalk-border-light: #B89B6E;
+  
+  --chalk-white: #1F2A44; /* Deep Navy Woodblock Ink */
+  --chalk-dim: #4A3326; /* Warm Walnut Text (>= 10.7:1 contrast on cream) */
+  --chalk-faint: #6E503E; /* Muted Walnut Text (>= 6.4:1 contrast on cream) */
+  
+  --neon-amber: #B22222; /* Firehouse Red */
+  --neon-amber-dim: #8B1A1A;
+  --neon-amber-glow: none;
+  --neon-amber-box-glow: 0 0 0 1.5px #B22222;
+
+  --neon-red: #B22222;
+  --neon-red-dark: #7F1717;
+
+  --felt-teal: #1F2A44; /* Deep Navy */
+  --felt-teal-light: #2A3B5F;
+  --felt-teal-dark: #141B2D;
+
+  --ink: #1F2A44;
+  --on-primary: #FFFFFF;
+
+  --bg-main: var(--bar-black);
+  --bg-dark: var(--bar-black);
+  --bg-card: var(--chalk-slate);
+  --bg-card-hover: var(--chalk-slate-hover);
+  --bg-accent: var(--chalk-slate-light);
+  --bg-surface: var(--chalk-slate);
+  --bg-input: var(--chalk-slate-dark);
+
+  --primary: var(--neon-amber);
+  --primary-hover: #8B1A1A;
+  --primary-glow: var(--neon-amber-box-glow);
+
+  --secondary: var(--chalk-slate-light);
+
+  --accent: #B22222;
+  --gold: #C99700;
+  --gold-light: #E0AC12;
+  --silver: #6B7280;
+  --bronze: #8D5127;
+
+  --danger: var(--neon-red);
+  --danger-glow: 0 0 0 1.5px var(--neon-red);
+
+  --text-main: var(--chalk-white);
+  --text-body: var(--chalk-white);
+  --text-muted: var(--chalk-dim);
+  --text-dim: var(--chalk-faint);
+
+  --glass-bg: var(--chalk-slate);
+  --glass-border: var(--chalk-border);
+  --glass-border-strong: var(--chalk-border-light);
+
+  --shadow-sm: 0 1px 3px rgba(31, 42, 68, 0.1);
+  --shadow-md: 0 3px 8px rgba(31, 42, 68, 0.15);
+  --shadow-lg: 0 6px 18px rgba(31, 42, 68, 0.18);
+  --shadow-modal: 0 12px 32px rgba(31, 42, 68, 0.28), 0 0 0 1px #D1BA94;
+
+  --bracket-line: #B89B6E;
+  --bracket-line-active: #B22222;
+
+  --chalkboard-noise: none;
+  --wood-rail-pattern: linear-gradient(180deg, #E6D3B1 0%, #D8C09A 100%);
+  --wood-rail-border: #A37C4A;
+  --wood-rail-shadow: 0 2px 8px rgba(31, 42, 68, 0.12), inset 0 -1px 0 #A37C4A;
+
+  --modal-overlay-bg: rgba(31, 42, 68, 0.7);
+  --final-match-glow: 0 0 0 2px #B22222;
+  --banner-glow: none;
+  --winner-modal-shadow: 0 12px 35px rgba(31, 42, 68, 0.3), 0 0 0 2px #B22222;
+  --trophy-filter: drop-shadow(0 2px 4px rgba(178, 34, 34, 0.35));
+
+  /* Woodblock Type */
+  --font-headline: 'Rye', 'Alfa Slab One', Georgia, serif;
+  --font-ui: 'Space Grotesk', system-ui, sans-serif;
+  --font-score: 'Space Mono', monospace;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-full: 9999px;
+}
+
+/* Textured Cream Paper Background */
+[data-theme="honkytonk"] body {
+  background-color: #F4EAD4;
+  background-image: 
+    radial-gradient(circle at 50% 50%, rgba(139, 90, 43, 0.05) 0%, transparent 80%),
+    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, 0.015) 2px, rgba(0, 0, 0, 0.015) 4px);
+  color: #1F2A44;
+}
+
+/* Header with Stars Decor */
+[data-theme="honkytonk"] .app-header {
+  position: relative;
+  background: #E8D5B5;
+  border-bottom: 2px solid #8B2500;
+  box-shadow: 0 2px 8px rgba(31, 42, 68, 0.12);
+}
+
+[data-theme="honkytonk"] .app-header::before,
+[data-theme="honkytonk"] .app-header::after {
+  content: "★";
+  font-size: 1.1rem;
+  color: #B22222;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+[data-theme="honkytonk"] .app-header::before {
+  left: calc(50% - 1.6rem);
+  top: 100%;
+  font-size: 0.7rem;
+}
+
+[data-theme="honkytonk"] .app-header::after {
+  right: calc(50% - 1.6rem);
+  top: 100%;
+  font-size: 0.7rem;
+}
+
+[data-anim="on"][data-theme="honkytonk"] .app-header::before,
+[data-anim="on"] [data-theme="honkytonk"] .app-header::before {
+  animation: honkyStarSwayLeft 3.5s ease-in-out infinite alternate;
+}
+
+[data-anim="on"][data-theme="honkytonk"] .app-header::after,
+[data-anim="on"] [data-theme="honkytonk"] .app-header::after {
+  animation: honkyStarSwayRight 3.5s ease-in-out infinite alternate;
+}
+
+@keyframes honkyStarSwayLeft {
+  0% { transform: translateY(-50%) rotate(-12deg) scale(0.9); opacity: 0.75; }
+  100% { transform: translateY(-50%) rotate(12deg) scale(1.15); opacity: 1; }
+}
+
+@keyframes honkyStarSwayRight {
+  0% { transform: translateY(-50%) rotate(12deg) scale(1.15); opacity: 1; }
+  100% { transform: translateY(-50%) rotate(-12deg) scale(0.9); opacity: 0.75; }
+}
+
+/* Rope-Style Borders: generous padding so rope borders don't eat content */
+[data-theme="honkytonk"] .card {
+  background: #FAF4E8;
+  padding: 1.35rem !important;
+  border: 3px solid transparent;
+  border-image: repeating-linear-gradient(
+    45deg,
+    #B22222 0px,
+    #B22222 4px,
+    #C49A45 4px,
+    #C49A45 8px,
+    #1F2A44 8px,
+    #1F2A44 12px,
+    #C49A45 12px,
+    #C49A45 16px
+  ) 3;
+  box-shadow: 0 3px 8px rgba(31, 42, 68, 0.12);
+}
+
+[data-theme="honkytonk"] .player-glass-card {
+  background: #FAF4E8;
+  padding: 0.75rem 0.95rem !important;
+  border: 3px solid transparent;
+  border-image: repeating-linear-gradient(
+    45deg,
+    #B22222 0px,
+    #B22222 4px,
+    #C49A45 4px,
+    #C49A45 8px,
+    #1F2A44 8px,
+    #1F2A44 12px,
+    #C49A45 12px,
+    #C49A45 16px
+  ) 3;
+  box-shadow: 0 3px 8px rgba(31, 42, 68, 0.12);
+}
+
+[data-theme="honkytonk"] .match-card {
+  background: #FAF4E8;
+  border: 3px solid transparent;
+  border-image: repeating-linear-gradient(
+    45deg,
+    #B22222 0px,
+    #B22222 4px,
+    #C49A45 4px,
+    #C49A45 8px,
+    #1F2A44 8px,
+    #1F2A44 12px,
+    #C49A45 12px,
+    #C49A45 16px
+  ) 3;
+  box-shadow: 0 3px 8px rgba(31, 42, 68, 0.12);
+}
+
+[data-theme="honkytonk"] .neon-glow {
+  text-shadow: none;
+  border-bottom: 2px solid #B22222;
+}
+
+/* Match Score in Bracket & Split-Flap Digits */
+[data-theme="honkytonk"] .match-score {
+  background-color: #FAF4E8 !important;
+  color: #B22222 !important;
+  border: 1.5px solid #B22222 !important;
+  box-shadow: 0 1px 4px rgba(31, 42, 68, 0.15) !important;
+}
+
+[data-theme="honkytonk"] .match-score .split-flap-digit {
+  background: #FAF4E8 !important;
+  border: 1px solid #B22222 !important;
+  color: #B22222 !important;
+  font-size: 0.85rem !important;
+  min-width: 1.6ch !important;
+  overflow: visible !important;
+}
+
+[data-theme="honkytonk"] .split-flap-digit > div {
+  display: none !important;
+}

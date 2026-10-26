@@ -1,0 +1,213 @@
+[data-theme="blacklight"] {
+  /* Blacklight UV Master Palette */
+  --bar-black: #0A0314;
+  --bar-black-elevated: #110522;
+  --chalk-slate: #130924;
+  --chalk-slate-light: #1D0F36;
+  --chalk-slate-dark: #0B0417;
+  --chalk-slate-hover: #22123F;
+  --chalk-border: #592B9E;
+  --chalk-border-light: #7C3AED;
+  
+  --chalk-white: #F5F3FF;
+  --chalk-dim: #C4B5FD;
+  --chalk-faint: #8B5CF6;
+  
+  --neon-amber: #00F0FF; /* Electric UV Cyan */
+  --neon-amber-dim: #00B8C4;
+  --neon-amber-glow: 0 0 8px rgba(0, 240, 255, 0.9), 0 0 18px rgba(0, 240, 255, 0.5);
+  --neon-amber-box-glow: 0 0 14px rgba(0, 240, 255, 0.6);
+
+  --neon-red: #FF007F; /* UV Hot Pink */
+  --neon-red-dark: #B30059;
+
+  --felt-teal: #39FF14; /* UV Neon Green */
+  --felt-teal-light: #5CFF3D;
+  --felt-teal-dark: #22B005;
+
+  --ink: #070312;
+  --on-primary: #070312;
+
+  --bg-main: var(--bar-black);
+  --bg-dark: var(--bar-black);
+  --bg-card: var(--chalk-slate);
+  --bg-card-hover: var(--chalk-slate-hover);
+  --bg-accent: var(--chalk-slate-light);
+  --bg-surface: var(--chalk-slate);
+  --bg-input: var(--chalk-slate-dark);
+
+  --primary: var(--neon-amber);
+  --primary-hover: #38F4FF;
+  --primary-glow: var(--neon-amber-box-glow);
+
+  --secondary: var(--chalk-slate-light);
+
+  --accent: #FF007F;
+  --gold: #39FF14;
+  --gold-light: #70FF50;
+  --silver: #A78BFA;
+  --bronze: #E879F9;
+
+  --danger: var(--neon-red);
+  --danger-glow: 0 0 14px rgba(255, 0, 127, 0.7);
+
+  --text-main: var(--chalk-white);
+  --text-body: var(--chalk-white);
+  --text-muted: var(--chalk-dim);
+  --text-dim: var(--chalk-faint);
+
+  --glass-bg: var(--chalk-slate);
+  --glass-border: var(--chalk-border);
+  --glass-border-strong: var(--chalk-border-light);
+
+  --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.7);
+  --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.8), 0 0 16px rgba(255, 0, 127, 0.35);
+  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.9), 0 0 28px rgba(0, 240, 255, 0.4);
+  --shadow-modal: 0 16px 40px rgba(0, 0, 0, 0.95), 0 0 24px rgba(57, 255, 20, 0.45);
+
+  --bracket-line: #3B1B6D;
+  --bracket-line-active: #00F0FF;
+
+  --chalkboard-noise: none;
+  --wood-rail-pattern: linear-gradient(180deg, #18092B 0%, #0A0314 100%);
+  --wood-rail-border: #7C3AED;
+  --wood-rail-shadow: 0 3px 14px rgba(255, 0, 127, 0.45), inset 0 -1px 0 #7C3AED;
+
+  --modal-overlay-bg: rgba(7, 3, 18, 0.94);
+  --final-match-glow: 0 0 20px rgba(0, 240, 255, 0.7), 0 0 32px rgba(255, 0, 127, 0.5);
+  --banner-glow: 0 0 18px rgba(255, 0, 127, 0.5);
+  --winner-modal-shadow: 0 0 45px rgba(0, 240, 255, 0.6), 0 20px 50px rgba(0, 0, 0, 0.9);
+  --trophy-filter: drop-shadow(0 0 16px rgba(57, 255, 20, 0.9));
+
+  --font-headline: 'Anton', -apple-system, system-ui, sans-serif;
+  --font-ui: 'Space Grotesk', system-ui, sans-serif;
+  --font-score: 'Space Mono', monospace;
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-full: 9999px;
+}
+
+/* Blacklight UV Background with Rich Purple Haze */
+[data-theme="blacklight"] body {
+  background-color: #0C021B;
+  background-image: 
+    radial-gradient(ellipse 90% 60% at 50% -10%, rgba(168, 85, 247, 0.42) 0%, transparent 70%),
+    radial-gradient(circle at 85% 45%, rgba(255, 0, 127, 0.28) 0%, transparent 55%),
+    radial-gradient(circle at 15% 65%, rgba(0, 240, 255, 0.25) 0%, transparent 55%),
+    radial-gradient(circle at 50% 85%, rgba(147, 51, 234, 0.38) 0%, transparent 60%),
+    radial-gradient(circle at 80% 90%, rgba(57, 255, 20, 0.15) 0%, transparent 50%);
+  background-attachment: fixed;
+  position: relative;
+}
+
+[data-theme="blacklight"] body::before {
+  content: "";
+  position: fixed;
+  inset: -60%;
+  background: linear-gradient(
+    130deg,
+    transparent 38%,
+    rgba(57, 255, 20, 0.10) 46%,
+    rgba(255, 0, 127, 0.12) 50%,
+    rgba(0, 240, 255, 0.10) 54%,
+    transparent 62%
+  );
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.95;
+}
+
+[data-anim="on"][data-theme="blacklight"] body::before,
+[data-anim="on"] [data-theme="blacklight"] body::before {
+  animation: uvLightStreak 16s ease-in-out infinite alternate;
+}
+
+@keyframes uvLightStreak {
+  0% { transform: translateY(-20%) rotate(15deg); }
+  50% { transform: translateY(10%) rotate(25deg); }
+  100% { transform: translateY(35%) rotate(18deg); }
+}
+
+/* Alternating Neon Green / Pink / Blue Glowing Card Borders */
+/* Card 1 / 3n+1: Electric UV Neon Green Glow */
+[data-theme="blacklight"] .card:nth-of-type(3n+1),
+[data-theme="blacklight"] .player-glass-card:nth-of-type(3n+1),
+[data-theme="blacklight"] .match-card:nth-of-type(3n+1) {
+  border: 2px solid #39FF14 !important;
+  box-shadow: 0 0 16px rgba(57, 255, 20, 0.75), 0 0 32px rgba(57, 255, 20, 0.35), inset 0 0 10px rgba(57, 255, 20, 0.18), 0 6px 16px rgba(0, 0, 0, 0.9) !important;
+  background-color: #130924 !important;
+}
+
+/* Card 2 / 3n+2: Electric UV Hot Pink Glow */
+[data-theme="blacklight"] .card:nth-of-type(3n+2),
+[data-theme="blacklight"] .player-glass-card:nth-of-type(3n+2),
+[data-theme="blacklight"] .match-card:nth-of-type(3n+2) {
+  border: 2px solid #FF007F !important;
+  box-shadow: 0 0 16px rgba(255, 0, 127, 0.75), 0 0 32px rgba(255, 0, 127, 0.35), inset 0 0 10px rgba(255, 0, 127, 0.18), 0 6px 16px rgba(0, 0, 0, 0.9) !important;
+  background-color: #130924 !important;
+}
+
+/* Card 3 / 3n: Electric UV Cyan / Blue Glow */
+[data-theme="blacklight"] .card:nth-of-type(3n),
+[data-theme="blacklight"] .player-glass-card:nth-of-type(3n),
+[data-theme="blacklight"] .match-card:nth-of-type(3n) {
+  border: 2px solid #00F0FF !important;
+  box-shadow: 0 0 16px rgba(0, 240, 255, 0.75), 0 0 32px rgba(0, 240, 255, 0.35), inset 0 0 10px rgba(0, 240, 255, 0.18), 0 6px 16px rgba(0, 0, 0, 0.9) !important;
+  background-color: #130924 !important;
+}
+
+/* Base fallback for unindexed cards */
+[data-theme="blacklight"] .card,
+[data-theme="blacklight"] .player-glass-card,
+[data-theme="blacklight"] .match-card {
+  border: 2px solid #39FF14 !important;
+  box-shadow: 0 0 16px rgba(57, 255, 20, 0.75), 0 0 32px rgba(57, 255, 20, 0.35), inset 0 0 10px rgba(57, 255, 20, 0.18), 0 6px 16px rgba(0, 0, 0, 0.9) !important;
+  background-color: #130924 !important;
+}
+
+/* Enhanced Hover Glows */
+[data-theme="blacklight"] .card:nth-of-type(3n+1):hover,
+[data-theme="blacklight"] .player-glass-card:nth-of-type(3n+1):hover {
+  border-color: #70FF50 !important;
+  box-shadow: 0 0 24px rgba(57, 255, 20, 0.9), 0 0 44px rgba(57, 255, 20, 0.5), inset 0 0 14px rgba(57, 255, 20, 0.3) !important;
+}
+
+[data-theme="blacklight"] .card:nth-of-type(3n+2):hover,
+[data-theme="blacklight"] .player-glass-card:nth-of-type(3n+2):hover {
+  border-color: #FF3399 !important;
+  box-shadow: 0 0 24px rgba(255, 0, 127, 0.9), 0 0 44px rgba(255, 0, 127, 0.5), inset 0 0 14px rgba(255, 0, 127, 0.3) !important;
+}
+
+[data-theme="blacklight"] .card:nth-of-type(3n):hover,
+[data-theme="blacklight"] .player-glass-card:nth-of-type(3n):hover {
+  border-color: #38F4FF !important;
+  box-shadow: 0 0 24px rgba(0, 240, 255, 0.9), 0 0 44px rgba(0, 240, 255, 0.5), inset 0 0 14px rgba(0, 240, 255, 0.3) !important;
+}
+
+[data-theme="blacklight"] .app-header {
+  border-bottom: 2px solid rgba(0, 240, 255, 0.7);
+  box-shadow: 0 0 18px rgba(0, 240, 255, 0.4), 0 3px 14px rgba(0, 0, 0, 0.7);
+}
+
+/* Match Score in Bracket & Split-Flap Digits */
+[data-theme="blacklight"] .match-score {
+  background-color: #0A0314 !important;
+  color: #39FF14 !important;
+  border: 1.5px solid #39FF14 !important;
+  box-shadow: 0 0 10px rgba(57, 255, 20, 0.6) !important;
+}
+
+[data-theme="blacklight"] .match-score .split-flap-digit {
+  background: #0A0314 !important;
+  border: 1px solid #39FF14 !important;
+  color: #39FF14 !important;
+  font-size: 0.85rem !important;
+  min-width: 1.6ch !important;
+  overflow: visible !important;
+}
+
+[data-theme="blacklight"] .split-flap-digit > div {
+  display: none !important;
+}
