@@ -1,0 +1,196 @@
+[data-theme="sunset"] {
+  /* Patio Sunset Master Palette */
+  --bar-black: #240D1E;
+  --bar-black-elevated: #311329;
+  --chalk-slate: #381D11;
+  --chalk-slate-light: #4A2718;
+  --chalk-slate-dark: #2A140B;
+  --chalk-slate-hover: #4F2B1B;
+  --chalk-border: #6B3720;
+  --chalk-border-light: #8C4B2C;
+  
+  --chalk-white: #FFF5E6;
+  --chalk-dim: #E2C9B5; /* Warm light tan (>= 9.8:1 contrast on wood) */
+  --chalk-faint: #C49D82; /* Muted tan (>= 6.28:1 contrast on wood) */
+  
+  --neon-amber: #FB923C; /* Warm Sunset Orange */
+  --neon-amber-dim: #EA580C;
+  --neon-amber-glow: 0 0 8px rgba(251, 146, 60, 0.7), 0 0 16px rgba(234, 88, 12, 0.4);
+  --neon-amber-box-glow: 0 0 12px rgba(251, 146, 60, 0.45);
+
+  --neon-red: #EF4444;
+  --neon-red-dark: #B91C1C;
+
+  --felt-teal: #D97706; /* Warm Amber Wood */
+  --felt-teal-light: #F59E0B;
+  --felt-teal-dark: #B45309;
+
+  --ink: #240D1E;
+  --on-primary: #1C0904;
+
+  --bg-main: var(--bar-black);
+  --bg-dark: var(--bar-black);
+  --bg-card: var(--chalk-slate);
+  --bg-card-hover: var(--chalk-slate-hover);
+  --bg-accent: var(--chalk-slate-light);
+  --bg-surface: var(--chalk-slate);
+  --bg-input: var(--chalk-slate-dark);
+
+  --primary: var(--neon-amber);
+  --primary-hover: #FDBA74;
+  --primary-glow: var(--neon-amber-box-glow);
+
+  --secondary: var(--chalk-slate-light);
+
+  --accent: #F97316;
+  --gold: #FBBF24;
+  --gold-light: #FDE68A;
+  --silver: #CBD5E1;
+  --bronze: #D97706;
+
+  --danger: var(--neon-red);
+  --danger-glow: 0 0 8px rgba(239, 68, 68, 0.4);
+
+  --text-main: var(--chalk-white);
+  --text-body: var(--chalk-white);
+  --text-muted: var(--chalk-dim);
+  --text-dim: var(--chalk-faint);
+
+  --glass-bg: var(--chalk-slate);
+  --glass-border: var(--chalk-border);
+  --glass-border-strong: var(--chalk-border-light);
+
+  --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.65), 0 0 10px rgba(249, 115, 22, 0.15);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.8), 0 0 18px rgba(251, 146, 60, 0.2);
+  --shadow-modal: 0 16px 40px rgba(0, 0, 0, 0.95), 0 0 0 1px #8C4B2C;
+
+  --bracket-line: #6B3720;
+  --bracket-line-active: #FB923C;
+
+  --chalkboard-noise: none;
+  --wood-rail-pattern: linear-gradient(180deg, #240C1A 0%, #160610 100%);
+  --wood-rail-border: #78291F;
+  --wood-rail-shadow: inset 0 -1px 0 rgba(0,0,0,0.8), 0 4px 14px rgba(0,0,0,0.6);
+
+  --modal-overlay-bg: rgba(27, 10, 31, 0.92);
+  --final-match-glow: 0 0 18px rgba(251, 146, 60, 0.4);
+  --banner-glow: 0 0 16px rgba(249, 115, 22, 0.3);
+  --winner-modal-shadow: 0 0 35px rgba(251, 146, 60, 0.4), 0 20px 50px rgba(0, 0, 0, 0.9);
+  --trophy-filter: drop-shadow(0 0 14px rgba(251, 191, 36, 0.7));
+
+  /* Western Slab Serif Typography */
+  --font-headline: 'Rye', 'Alfa Slab One', Georgia, serif;
+  --font-ui: 'Space Grotesk', system-ui, sans-serif;
+  --font-score: 'Space Mono', monospace;
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-full: 9999px;
+}
+
+/* Sunset Gradient Body */
+[data-theme="sunset"] body {
+  background-color: #240D1E;
+  background-image: linear-gradient(
+    180deg,
+    #180820 0%,
+    #3D1236 25%,
+    #731F3F 52%,
+    #AF3E30 78%,
+    #D96E28 100%
+  );
+  background-attachment: fixed;
+}
+
+/* String Lights Row along Header */
+[data-theme="sunset"] .app-header {
+  position: relative;
+  background: linear-gradient(180deg, #1C0A18 0%, #2A1024 100%);
+  border-bottom: 2px solid #9E432A;
+  padding-top: 1.1rem;
+}
+
+[data-theme="sunset"] .app-header::before {
+  content: "";
+  position: absolute;
+  top: 1px;
+  left: 0;
+  right: 0;
+  height: 14px;
+  background-image: 
+    radial-gradient(circle at 12px 6px, #FFFBEB 0px, #FBBF24 2.5px, rgba(251, 191, 36, 0.6) 4px, transparent 6px),
+    radial-gradient(circle at 37px 6px, #FFE4E6 0px, #F43F5E 2.5px, rgba(244, 63, 94, 0.6) 4px, transparent 6px),
+    radial-gradient(circle at 62px 6px, #DCFCE7 0px, #22C55E 2.5px, rgba(34, 197, 94, 0.6) 4px, transparent 6px),
+    radial-gradient(circle at 87px 6px, #FEF3C7 0px, #F97316 2.5px, rgba(249, 115, 22, 0.6) 4px, transparent 6px);
+  background-repeat: repeat-x;
+  background-size: 100px 14px;
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+[data-anim="on"][data-theme="sunset"] .app-header::before,
+[data-anim="on"] [data-theme="sunset"] .app-header::before {
+  animation: sunsetStringLights 2s ease-in-out infinite alternate;
+}
+
+@keyframes sunsetStringLights {
+  0% { opacity: 0.6; filter: drop-shadow(0 0 2px rgba(251, 191, 36, 0.4)); }
+  50% { opacity: 1; filter: drop-shadow(0 0 6px rgba(244, 63, 94, 0.85)); }
+  100% { opacity: 0.75; filter: drop-shadow(0 0 4px rgba(34, 197, 94, 0.7)); }
+}
+
+/* Wood Plank Card Backgrounds */
+[data-theme="sunset"] .card,
+[data-theme="sunset"] .player-glass-card,
+[data-theme="sunset"] .match-card {
+  background-color: #381D11;
+  background-image: repeating-linear-gradient(
+    0deg,
+    #381D11 0px,
+    #381D11 26px,
+    #241109 26px,
+    #241109 28px,
+    #442315 28px,
+    #442315 54px,
+    #1E0D06 54px,
+    #1E0D06 56px
+  );
+  border: 1px solid #7C3F24;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 180, 120, 0.15);
+}
+
+/* Bottle Cap Rank Badges */
+[data-theme="sunset"] .player-glass-card > div:first-child .split-flap-digit,
+[data-theme="sunset"] .player-glass-card > div:first-child .split-flap-plain,
+[data-theme="sunset"] .player-avatar {
+  border-radius: 50% !important;
+  border: 2px dashed #F59E0B !important;
+  outline: 2px solid #B45309;
+  outline-offset: 1px;
+  background: radial-gradient(circle, #EA580C 0%, #9A3412 75%, #7C2D12 100%) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.7), inset 0 1px 2px rgba(255, 255, 255, 0.4) !important;
+}
+
+/* Match Score in Bracket & Split-Flap Digits */
+[data-theme="sunset"] .match-score {
+  background-color: #240D1E !important;
+  color: #FB923C !important;
+  border: 1.5px solid #FB923C !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5) !important;
+}
+
+[data-theme="sunset"] .match-score .split-flap-digit {
+  background: #240D1E !important;
+  border: 1px solid #FB923C !important;
+  color: #FB923C !important;
+  font-size: 0.85rem !important;
+  min-width: 1.6ch !important;
+  overflow: visible !important;
+}
+
+[data-theme="sunset"] .split-flap-digit > div {
+  display: none !important;
+}

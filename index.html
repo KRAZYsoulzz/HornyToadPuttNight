@@ -1,15 +1,36 @@
 <!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="backbar" data-anim="on">
   <head>
     <meta charset="UTF-8" />
     <script>
       (function() {
         try {
-          var theme = localStorage.getItem('htpn-theme') || 'dark';
+          var params = new URLSearchParams(window.location.search);
+          var theme = params.get('theme') || localStorage.getItem('htpn-theme') || 'backbar';
+          if (theme === 'dark') theme = 'backbar';
+          if (theme === 'light') theme = 'daylight';
           document.documentElement.dataset.theme = theme;
+
+          var anim = localStorage.getItem('htpn-anim');
+          if (!anim) {
+            var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            anim = reduce ? 'off' : 'on';
+          }
+          document.documentElement.dataset.anim = anim;
+
+          var metaColors = {
+            backbar: '#121010',
+            daylight: '#F3EEE4',
+            classic: '#070B10',
+            blacklight: '#070312',
+            sunset: '#240D1E',
+            arcade: '#050813',
+            honkytonk: '#F5EBD7',
+            broadcast: '#0D2818'
+          };
           var metaTheme = document.querySelector('meta[name="theme-color"]');
-          if (metaTheme) {
-            metaTheme.setAttribute('content', theme === 'light' ? '#F3EEE4' : '#121010');
+          if (metaTheme && metaColors[theme]) {
+            metaTheme.setAttribute('content', metaColors[theme]);
           }
         } catch (e) {}
       })();

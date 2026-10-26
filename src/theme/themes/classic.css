@@ -1,0 +1,186 @@
+[data-theme="classic"] {
+  /* Classic Tournament Turf & Liquid Glass Obsidian (Pre-redesign) */
+  --bar-black: #070B10;
+  --bar-black-elevated: #0B1017;
+  --chalk-slate: rgba(14, 21, 32, 0.72);
+  --chalk-slate-light: rgba(22, 32, 48, 0.7);
+  --chalk-slate-dark: rgba(10, 15, 23, 0.65);
+  --chalk-slate-hover: rgba(20, 29, 44, 0.82);
+  --chalk-border: rgba(255, 255, 255, 0.12);
+  --chalk-border-light: rgba(255, 255, 255, 0.24);
+  
+  --chalk-white: #F8FAFC;
+  --chalk-dim: #CBD5E1;
+  --chalk-faint: #64748B;
+  
+  --neon-amber: #10B981; /* Emerald primary */
+  --neon-amber-dim: #059669;
+  --neon-amber-glow: 0 0 14px rgba(16, 185, 129, 0.45);
+  --neon-amber-box-glow: 0 0 14px rgba(16, 185, 129, 0.45);
+
+  --neon-red: #EF4444;
+  --neon-red-dark: #B91C1C;
+
+  --felt-teal: #10B981;
+  --felt-teal-light: #34D399;
+  --felt-teal-dark: #059669;
+
+  --ink: #070B10;
+  --on-primary: #070B10;
+
+  --bg-main: #070B10;
+  --bg-dark: #070B10;
+  --bg-card: rgba(14, 21, 32, 0.72);
+  --bg-card-hover: rgba(20, 29, 44, 0.82);
+  --bg-accent: rgba(22, 32, 48, 0.7);
+  --bg-surface: rgba(28, 40, 60, 0.75);
+  --bg-input: rgba(10, 15, 23, 0.65);
+
+  --primary: #10B981;
+  --primary-hover: #34D399;
+  --primary-glow: rgba(16, 185, 129, 0.45);
+
+  --secondary: #1E293B;
+
+  --accent: #F59E0B;
+  --gold: #F59E0B;
+  --gold-light: #FDE68A;
+  --silver: #94A3B8;
+  --bronze: #D97706;
+
+  --danger: #EF4444;
+  --danger-glow: rgba(239, 68, 68, 0.4);
+
+  --text-main: #F8FAFC;
+  --text-body: #CBD5E1;
+  --text-muted: #8B9BB0;
+  --text-dim: #64748B;
+
+  --glass-bg: rgba(14, 21, 32, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-border-strong: rgba(255, 255, 255, 0.24);
+
+  --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 8px 32px 0 rgba(0, 0, 0, 0.45), inset 0 1px 1px 0 rgba(255, 255, 255, 0.15);
+  --shadow-lg: 0 16px 40px -4px rgba(0, 0, 0, 0.6), inset 0 1px 1px 0 rgba(255, 255, 255, 0.2);
+  --shadow-modal: 0 25px 60px -10px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.15);
+
+  --bracket-line: #1F2C3F;
+  --bracket-line-active: #10B981;
+
+  --chalkboard-noise: none;
+  --wood-rail-pattern: none;
+  --wood-rail-border: rgba(255, 255, 255, 0.08);
+  --wood-rail-shadow: none;
+
+  --modal-overlay-bg: rgba(7, 11, 16, 0.88);
+  --final-match-glow: 0 0 20px rgba(16, 185, 129, 0.4);
+  --banner-glow: 0 0 16px rgba(16, 185, 129, 0.3);
+  --winner-modal-shadow: 0 20px 50px rgba(0, 0, 0, 0.9), 0 0 30px rgba(16, 185, 129, 0.3);
+  --trophy-filter: drop-shadow(0 0 14px rgba(245, 158, 11, 0.6));
+
+  /* System font stack */
+  --font-headline: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-score: 'Space Mono', monospace;
+
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 18px;
+  --radius-full: 9999px;
+}
+
+/* Classic decorative overrides */
+[data-theme="classic"] body {
+  background-color: #070B10;
+  background-image: 
+    radial-gradient(ellipse 90% 50% at 50% -10%, rgba(16, 185, 129, 0.1), transparent 75%),
+    radial-gradient(ellipse 70% 35% at 85% 15%, rgba(245, 158, 11, 0.05), transparent 60%),
+    radial-gradient(ellipse 80% 40% at 15% 85%, rgba(16, 185, 129, 0.04), transparent 60%);
+  background-attachment: fixed;
+}
+
+[data-theme="classic"] .app-header {
+  background: transparent;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: none;
+}
+
+[data-theme="classic"] .app-logo {
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: #F8FAFC;
+  text-transform: none;
+}
+
+[data-theme="classic"] .page-title {
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-transform: none;
+}
+
+[data-theme="classic"] .card,
+[data-theme="classic"] .player-glass-card,
+[data-theme="classic"] .match-card {
+  background: var(--bg-card);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--shadow-md);
+}
+
+[data-theme="classic"] .card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  pointer-events: none;
+}
+
+[data-theme="classic"] .card-title {
+  font-weight: 750;
+  letter-spacing: -0.01em;
+  text-transform: none;
+}
+
+[data-theme="classic"] .btn {
+  border-radius: 10px;
+}
+
+[data-theme="classic"] .btn-primary {
+  background: linear-gradient(180deg, rgba(16, 185, 129, 0.95) 0%, rgba(5, 150, 105, 0.9) 100%);
+  border: 1px solid rgba(52, 211, 153, 0.3);
+  color: #FFFFFF;
+}
+
+[data-theme="classic"] .btn-secondary {
+  background: rgba(30, 41, 59, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #F8FAFC;
+}
+
+/* Match Score in Bracket & Split-Flap Digits */
+[data-theme="classic"] .match-score {
+  background-color: #070B10 !important;
+  color: #10B981 !important;
+  border: 1.5px solid #10B981 !important;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.4) !important;
+}
+
+[data-theme="classic"] .match-score .split-flap-digit {
+  background: #070B10 !important;
+  border: 1px solid #10B981 !important;
+  color: #10B981 !important;
+  font-size: 0.85rem !important;
+  min-width: 1.6ch !important;
+  overflow: visible !important;
+}
+
+[data-theme="classic"] .split-flap-digit > div {
+  display: none !important;
+}
+

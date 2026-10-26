@@ -1,0 +1,428 @@
+[data-theme="broadcast"] {
+  /* Championship Broadcast Master Palette */
+  --bar-black: #0D2818; /* Turf Green */
+  --bar-black-elevated: #133822;
+  --chalk-slate: #FFFFFF; /* Crisp Lower-Third White Cards */
+  --chalk-slate-light: #F1F5F9;
+  --chalk-slate-dark: #E2E8F0;
+  --chalk-slate-hover: #EDF2F7;
+  --chalk-border: #CBD5E1;
+  --chalk-border-light: #94A3B8;
+  
+  --chalk-white: #0F172A; /* High contrast dark navy ink on white cards */
+  --chalk-dim: #334155; /* Slate muted text (>= 9:1 contrast on white) */
+  --chalk-faint: #475569; /* Slate dim text (>= 7:1 contrast on white) */
+  
+  --neon-amber: #E5B842; /* Championship Broadcast Gold */
+  --neon-amber-dim: #B45309; /* Dark Amber for high contrast on white (>= 4.7:1) */
+  --neon-amber-glow: none;
+  --neon-amber-box-glow: 0 0 0 1.5px #E5B842;
+
+  --neon-red: #DC2626;
+  --neon-red-dark: #991B1B;
+
+  --felt-teal: #15803D; /* Deep Turf Green Accent (>= 4.6:1 on white) */
+  --felt-teal-light: #166534;
+  --felt-teal-dark: #0D2818;
+
+  --ink: #0D2818;
+  --on-primary: #0D2818;
+
+  --bg-main: #0D2818;
+  --bg-dark: #091E12;
+  --bg-card: #FFFFFF;
+  --bg-card-hover: #F8F9FA;
+  --bg-accent: #F1F5F9;
+  --bg-surface: #FFFFFF;
+  --bg-input: #F1F5F9;
+
+  --primary: #E5B842;
+  --primary-hover: #F0C961;
+  --primary-glow: 0 2px 8px rgba(0, 0, 0, 0.4);
+
+  --secondary: #F1F5F9;
+
+  --accent: #B45309;
+  --gold: #E5B842;
+  --gold-light: #FDE047;
+  --silver: #475569;
+  --bronze: #92400E;
+
+  --danger: #DC2626;
+  --danger-glow: 0 0 0 1.5px #DC2626;
+
+  --text-main: #FFFFFF;
+  --text-body: #FFFFFF;
+  --text-muted: #E2E8F0;
+  --text-dim: #CBD5E1;
+
+  --glass-bg: #FFFFFF;
+  --glass-border: #CBD5E1;
+  --glass-border-strong: #94A3B8;
+
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.55);
+  --shadow-modal: 0 16px 40px rgba(0, 0, 0, 0.8), 0 0 0 2px #E5B842;
+
+  --bracket-line: rgba(255, 255, 255, 0.4);
+  --bracket-line-active: #E5B842;
+
+  --chalkboard-noise: none;
+  --wood-rail-pattern: linear-gradient(180deg, #091E12 0%, #05120B 100%);
+  --wood-rail-border: #E5B842;
+  --wood-rail-shadow: 0 3px 12px rgba(0, 0, 0, 0.5);
+
+  --modal-overlay-bg: rgba(9, 30, 18, 0.9);
+  --final-match-glow: 0 0 16px rgba(229, 184, 66, 0.45);
+  --banner-glow: none;
+  --winner-modal-shadow: 0 0 35px rgba(229, 184, 66, 0.45), 0 20px 50px rgba(0, 0, 0, 0.9);
+  --trophy-filter: drop-shadow(0 0 14px rgba(229, 184, 66, 0.7));
+
+  /* Oswald Condensed Typography */
+  --font-headline: 'Oswald', sans-serif;
+  --font-ui: 'Space Grotesk', system-ui, sans-serif;
+  --font-score: 'Space Mono', monospace;
+
+  --radius-sm: 3px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+  --radius-full: 9999px;
+}
+
+/* Turf Green Striped Body */
+[data-theme="broadcast"] body {
+  background-color: #0D2818;
+  background-image: repeating-linear-gradient(
+    180deg,
+    #0D2818 0px,
+    #0D2818 36px,
+    #091E12 36px,
+    #091E12 72px
+  );
+  background-attachment: fixed;
+  color: #FFFFFF;
+}
+
+/* Deep Turf Green Header Strip with Gold Underline */
+[data-theme="broadcast"] .app-header {
+  background: #091E12 !important;
+  border-bottom: 3px solid #E5B842 !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.65);
+}
+
+[data-theme="broadcast"] .app-logo,
+[data-theme="broadcast"] .app-header [style*="font-headline"],
+[data-theme="broadcast"] .page-title {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  color: #FFFFFF !important;
+}
+
+/* Header Theme Button & VIEW Button: Visible with high contrast >= 4.5:1 */
+[data-theme="broadcast"] .theme-toggle-btn {
+  background: #0D2818 !important;
+  border: 1.5px solid #E5B842 !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="broadcast"] .theme-toggle-btn svg {
+  color: #FFFFFF !important;
+  stroke: #FFFFFF !important;
+  opacity: 1 !important;
+}
+
+[data-theme="broadcast"] .theme-toggle-btn:hover {
+  background: #153E24 !important;
+  color: #E5B842 !important;
+  border-color: #FDE047 !important;
+}
+
+[data-theme="broadcast"] .theme-toggle-btn:hover svg {
+  color: #E5B842 !important;
+  stroke: #E5B842 !important;
+}
+
+[data-theme="broadcast"] .bracket-admin-badge {
+  background: #0D2818 !important;
+  border: 1.5px solid #E5B842 !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="broadcast"] .bracket-admin-badge span {
+  color: #FFFFFF !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.08em !important;
+}
+
+[data-theme="broadcast"] .bracket-admin-badge svg {
+  opacity: 1 !important;
+  color: #E5B842 !important;
+  stroke: #E5B842 !important;
+}
+
+[data-theme="broadcast"] .bracket-admin-badge.is-admin {
+  border-color: #E5B842 !important;
+  background: #133822 !important;
+}
+
+[data-theme="broadcast"] .bracket-admin-badge.is-admin span {
+  color: #E5B842 !important;
+}
+
+/* Info Banner: High contrast lower-third style */
+[data-theme="broadcast"] .app-header + div,
+[data-theme="broadcast"] .app-container > div:has(> .accent-text) {
+  background: #FFFFFF !important;
+  color: #0F172A !important;
+  border: 1px solid #CBD5E1 !important;
+  border-left: 5px solid #E5B842 !important;
+  border-radius: 4px !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important;
+  font-weight: 600;
+}
+
+[data-theme="broadcast"] .app-header + div span,
+[data-theme="broadcast"] .app-container > div:has(> .accent-text) span {
+  color: #0F172A !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="broadcast"] .app-header + div .accent-text,
+[data-theme="broadcast"] .app-container > div:has(> .accent-text) .accent-text,
+[data-theme="broadcast"] .app-header + div svg,
+[data-theme="broadcast"] .app-container > div:has(> .accent-text) svg {
+  color: #92400E !important; /* Dark gold/amber: contrast 6.7:1 on white */
+  stroke: #92400E !important;
+}
+
+/* White Lower-Third Style Cards with Gold Left Accent and Dark Navy Text */
+[data-theme="broadcast"] .card,
+[data-theme="broadcast"] .player-glass-card,
+[data-theme="broadcast"] .match-card,
+[data-theme="broadcast"] .modal-content {
+  background: #FFFFFF !important;
+  color: #0F172A !important;
+  border-radius: 4px !important;
+  border: 1px solid #CBD5E1 !important;
+  border-left: 6px solid #E5B842 !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
+  position: relative;
+  overflow: hidden;
+
+  --text-main: #0F172A;
+  --text-body: #1E293B;
+  --text-muted: #334155;
+  --text-dim: #475569;
+  --chalk-white: #0F172A;
+  --chalk-dim: #334155;
+  --chalk-faint: #475569;
+  --chalk-slate-dark: #E2E8F0;
+  --chalk-border: #CBD5E1;
+  --neon-amber: #B45309;
+}
+
+[data-theme="broadcast"] .card-title {
+  color: #091E12 !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.04em !important;
+  border-bottom: 2px solid #E5B842 !important;
+  padding-bottom: 0.45rem !important;
+}
+
+[data-theme="broadcast"] .card-title .accent-text,
+[data-theme="broadcast"] .card-title svg {
+  color: #B45309 !important;
+  stroke: #B45309 !important;
+}
+
+/* Bracket creation is restricted to Admins box */
+[data-theme="broadcast"] .card div:has(> p),
+[data-theme="broadcast"] .card div[style*="chalk-slate-dark"] {
+  background: #E2E8F0 !important;
+  border: 1.5px solid #94A3B8 !important;
+  border-left: 4px solid #E5B842 !important;
+  border-radius: 4px !important;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-theme="broadcast"] .card div:has(> p) p,
+[data-theme="broadcast"] .card div[style*="chalk-slate-dark"] p,
+[data-theme="broadcast"] .card p {
+  color: #0F172A !important;
+  font-weight: 600 !important;
+}
+
+/* Stat Cards in Players tab */
+[data-theme="broadcast"] .stat-card {
+  background: #FFFFFF !important;
+  border: 1px solid #CBD5E1 !important;
+  border-left: 4px solid #E5B842 !important;
+}
+
+[data-theme="broadcast"] .stat-card span,
+[data-theme="broadcast"] .stat-card .split-flap-plain {
+  color: #0F172A !important;
+  font-weight: 800 !important;
+}
+
+[data-theme="broadcast"] .stat-card div {
+  color: #334155 !important;
+}
+
+[data-theme="broadcast"] .stat-card span[style*="felt-teal"] {
+  color: #15803D !important;
+}
+
+/* Player cards text contrast */
+[data-theme="broadcast"] .player-glass-card span,
+[data-theme="broadcast"] .player-glass-card .player-name,
+[data-theme="broadcast"] .player-glass-card .split-flap-plain {
+  color: #0F172A !important;
+}
+
+[data-theme="broadcast"] .player-glass-card div[style*="felt-teal"],
+[data-theme="broadcast"] .player-glass-card span[style*="felt-teal"] {
+  color: #15803D !important;
+}
+
+/* Filter Pills & "ALL (66)" chip */
+[data-theme="broadcast"] .filter-pill {
+  background-color: #F1F5F9 !important;
+  border: 1.5px solid #94A3B8 !important;
+  color: #0F172A !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="broadcast"] .filter-pill svg {
+  color: inherit !important;
+  stroke: currentColor !important;
+}
+
+[data-theme="broadcast"] .filter-pill:hover {
+  background-color: #E2E8F0 !important;
+  border-color: #64748B !important;
+  color: #091E12 !important;
+}
+
+[data-theme="broadcast"] .filter-pill.active {
+  background-color: #E5B842 !important;
+  border-color: #B45309 !important;
+  color: #091E12 !important;
+  font-weight: 800 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35) !important;
+}
+
+[data-theme="broadcast"] .filter-pill.active svg {
+  color: #091E12 !important;
+  stroke: #091E12 !important;
+}
+
+/* Inputs & Form Controls */
+[data-theme="broadcast"] .input {
+  background: #F1F5F9 !important;
+  border: 1.5px solid #94A3B8 !important;
+  color: #0F172A !important;
+}
+
+[data-theme="broadcast"] .input::placeholder {
+  color: #475569 !important;
+}
+
+[data-theme="broadcast"] .btn-secondary {
+  background: #F1F5F9 !important;
+  border: 1.5px solid #94A3B8 !important;
+  color: #0F172A !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="broadcast"] .btn-primary {
+  background: #091E12 !important;
+  border: 1.5px solid #E5B842 !important;
+  color: #FFFFFF !important;
+  font-weight: 800 !important;
+}
+
+/* Gold Active Floating Bottom Nav */
+[data-theme="broadcast"] .nav {
+  background-color: #091E12 !important;
+  border: 1.5px solid rgba(229, 184, 66, 0.5) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7) !important;
+}
+
+[data-theme="broadcast"] .nav-item {
+  color: #E2E8F0 !important;
+}
+
+[data-theme="broadcast"] .nav-item:hover {
+  color: #FFFFFF !important;
+  background-color: rgba(229, 184, 66, 0.15) !important;
+}
+
+[data-theme="broadcast"] .nav-item.active {
+  background-color: #E5B842 !important;
+  color: #091E12 !important;
+  border-color: #E5B842 !important;
+  font-weight: 800 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4) !important;
+}
+
+[data-theme="broadcast"] .nav-item.active svg {
+  color: #091E12 !important;
+  stroke: #091E12 !important;
+}
+
+/* Match Score in Bracket & Split-Flap Digits */
+[data-theme="broadcast"] .match-score {
+  background-color: #091E12 !important;
+  color: #FFFFFF !important;
+  border: 1.5px solid #E5B842 !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5) !important;
+}
+
+[data-theme="broadcast"] .match-score .split-flap-digit {
+  background: #091E12 !important;
+  border: 1px solid #E5B842 !important;
+  color: #FFFFFF !important;
+  font-size: 0.85rem !important;
+  min-width: 1.6ch !important;
+  overflow: visible !important;
+}
+
+[data-theme="broadcast"] .split-flap-digit > div {
+  display: none !important;
+}
+
+/* Slide-in shimmer on leaderboard rows */
+[data-theme="broadcast"] .player-glass-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -120%;
+  width: 70%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(229, 184, 66, 0.2) 40%,
+    rgba(255, 255, 255, 0.6) 50%,
+    rgba(229, 184, 66, 0.2) 60%,
+    transparent 100%
+  );
+  transform: skewX(-20deg);
+  pointer-events: none;
+}
+
+[data-anim="on"][data-theme="broadcast"] .player-glass-card::before,
+[data-anim="on"] [data-theme="broadcast"] .player-glass-card::before {
+  animation: broadcastRowShimmer 6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes broadcastRowShimmer {
+  0% { left: -120%; }
+  35% { left: 180%; }
+  100% { left: 180%; }
+}

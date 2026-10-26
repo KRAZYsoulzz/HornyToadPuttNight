@@ -10,6 +10,8 @@ interface SplitFlapProps {
   suffix?: string;
   highlightOnChange?: boolean;
   variant?: 'default' | 'sm';
+  /** Render as plain readable numerals (no flap tiles) */
+  plain?: boolean;
 }
 
 interface SingleFlapDigitProps {
@@ -45,7 +47,9 @@ const SingleFlapDigit: React.FC<SingleFlapDigitProps> = ({ char, highlight = fal
         background: 'var(--chalk-slate-dark)',
         border: '1px solid var(--chalk-border)',
         borderRadius: 'var(--radius-sm)',
-        width: isSm ? '1.05em' : '1.25em',
+        width: 'auto',
+        minWidth: isSm ? '1.35ch' : '1.55ch',
+        padding: '0 0.12ch',
         height: isSm ? '1.35em' : '1.5em',
         lineHeight: isSm ? '1.35em' : '1.5em',
         textAlign: 'center',
@@ -55,6 +59,7 @@ const SingleFlapDigit: React.FC<SingleFlapDigitProps> = ({ char, highlight = fal
         color: highlight ? 'var(--neon-amber)' : 'var(--chalk-white)',
         overflow: 'hidden',
         userSelect: 'none',
+        margin: 0,
         perspective: '400px',
         boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.8), 0 1px 2px rgba(0,0,0,0.5)',
       }}
@@ -135,8 +140,9 @@ export const SplitFlap: React.FC<SplitFlapProps> = ({
   suffix = '',
   highlightOnChange = false,
   variant = 'default',
+  plain = false,
 }) => {
-  if (!isNumeric(value)) {
+  if (plain || !isNumeric(value)) {
     return (
       <span className={`split-flap-plain ${className}`} style={{ fontVariantNumeric: 'tabular-nums' }}>
         {prefix}{value != null ? String(value) : ''}{suffix}

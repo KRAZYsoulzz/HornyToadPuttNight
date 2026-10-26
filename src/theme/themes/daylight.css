@@ -1,0 +1,125 @@
+[data-theme="daylight"],
+[data-theme="light"] {
+  /* Daylight Chalk Master Palette (Light) */
+  --bar-black: #F3EEE4; /* Paper background */
+  --bar-black-elevated: #E7E1D4;
+  --chalk-slate: #E2DCD0; /* Panels */
+  --chalk-slate-light: #D6CFBF;
+  --chalk-slate-dark: #ECE5D8;
+  --chalk-slate-hover: #D9D2C3;
+  --chalk-border: #C8C1B2;
+  --chalk-border-light: #AEA697;
+  
+  --chalk-white: #121010; /* Ink text */
+  --chalk-dim: #555048; /* Muted text (AA contrast) */
+  --chalk-faint: #756E65; /* Faint text (AA contrast) */
+  
+  --neon-amber: #A86600; /* Darker amber for AA contrast on light bg */
+  --neon-amber-dim: #8F5500;
+  --neon-amber-glow: none; /* No text-shadow glow in light mode */
+  --neon-amber-box-glow: 0 0 0 1.5px #A86600; /* Subtle colored edge */
+
+  --neon-red: #D23A2E; /* Red */
+  --neon-red-dark: #A6281E;
+
+  --felt-teal: #17605B; /* Money teal */
+  --felt-teal-light: #1F7973;
+  --felt-teal-dark: #104541;
+
+  --ink: #121010;
+  --on-primary: #FFFFFF;
+
+  /* Legacy variable mappings remapped to Daylight Chalk */
+  --bg-main: var(--bar-black);
+  --bg-dark: var(--bar-black);
+  --bg-card: var(--chalk-slate);
+  --bg-card-hover: var(--chalk-slate-hover);
+  --bg-accent: var(--chalk-slate-light);
+  --bg-surface: var(--chalk-slate);
+  --bg-input: var(--chalk-slate-dark);
+
+  --primary: var(--neon-amber);
+  --primary-hover: #8F5500;
+  --primary-glow: var(--neon-amber-box-glow);
+
+  --secondary: var(--chalk-slate-light);
+
+  --accent: var(--neon-amber);
+  --gold: var(--neon-amber);
+  --gold-light: #E09825;
+  --silver: #6B7280;
+  --bronze: #8D5127;
+
+  --danger: var(--neon-red);
+  --danger-glow: 0 0 0 1.5px var(--neon-red);
+
+  --text-main: var(--chalk-white);
+  --text-body: var(--chalk-white);
+  --text-muted: var(--chalk-dim);
+  --text-dim: var(--chalk-faint);
+
+  --glass-bg: var(--chalk-slate);
+  --glass-border: var(--chalk-border);
+  --glass-border-strong: var(--chalk-border-light);
+
+  --shadow-sm: 0 1px 3px rgba(18, 16, 16, 0.08);
+  --shadow-md: 0 3px 8px rgba(18, 16, 16, 0.12);
+  --shadow-lg: 0 6px 16px rgba(18, 16, 16, 0.16);
+  --shadow-modal: 0 12px 32px rgba(18, 16, 16, 0.25), 0 0 0 1px var(--chalk-border);
+
+  --bracket-line: var(--chalk-border);
+  --bracket-line-active: var(--neon-amber);
+
+  /* Materials */
+  --chalkboard-noise: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  --wood-rail-pattern: repeating-linear-gradient(90deg, #bfa386 0px, #caa98b 3px, #b29475 6px, #d3b395 9px, #bfa386 13px, #ad8f70 16px, #caa98b 21px, #d9bba0 25px);
+  --wood-rail-border: #997858;
+  --wood-rail-shadow: inset 0 -1px 0 rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.45), 0 2px 8px rgba(18, 16, 16, 0.08);
+
+  --modal-overlay-bg: rgba(18, 16, 16, 0.65);
+  --final-match-glow: 0 0 0 2px var(--neon-amber);
+  --banner-glow: none;
+  --winner-modal-shadow: 0 12px 40px rgba(18, 16, 16, 0.25), 0 0 0 2px var(--neon-amber);
+  --trophy-filter: drop-shadow(0 2px 4px rgba(168, 102, 0, 0.3));
+
+  /* Typography & Radii */
+  --font-headline: 'Anton', -apple-system, system-ui, sans-serif;
+  --font-ui: 'Space Grotesk', system-ui, sans-serif;
+  --font-score: 'Space Mono', monospace;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-full: 9999px;
+}
+
+[data-theme="daylight"] .neon-glow,
+[data-theme="light"] .neon-glow {
+  text-shadow: none;
+  border-bottom: 2px solid var(--neon-amber);
+}
+
+/* Match Score in Bracket & Split-Flap Digits */
+[data-theme="daylight"] .match-score,
+[data-theme="light"] .match-score {
+  background-color: #ECE5D8 !important;
+  color: #A86600 !important;
+  border: 1.5px solid #A86600 !important;
+  box-shadow: 0 1px 3px rgba(18, 16, 16, 0.12) !important;
+}
+
+[data-theme="daylight"] .match-score .split-flap-digit,
+[data-theme="light"] .match-score .split-flap-digit {
+  background: #ECE5D8 !important;
+  border: 1px solid #A86600 !important;
+  color: #A86600 !important;
+  font-size: 0.85rem !important;
+  min-width: 1.6ch !important;
+  overflow: visible !important;
+}
+
+[data-theme="daylight"] .split-flap-digit > div,
+[data-theme="light"] .split-flap-digit > div {
+  display: none !important;
+}
+

@@ -1,11 +1,11 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
-import { Plus, Trophy, Trash2, ChevronRight, Settings2, User, Swords, History, UserPlus, ArrowLeft, LockOpen, Lock as LockIcon, QrCode, Coins, Percent, Edit2, Check, X, Shuffle, GitMerge, Sliders, AlertTriangle, Tv, Minimize2, ArrowLeftRight, MoreVertical, RotateCcw, Crown, Info, Sun, Moon } from 'lucide-react'
+import { Plus, Trophy, Trash2, ChevronRight, Settings2, User, Swords, History, UserPlus, ArrowLeft, LockOpen, Lock as LockIcon, QrCode, Coins, Percent, Edit2, Check, X, Shuffle, GitMerge, Sliders, AlertTriangle, Tv, Minimize2, ArrowLeftRight, MoreVertical, RotateCcw, Crown, Info, Palette, Sparkles } from 'lucide-react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import SplitFlap from './components/SplitFlap'
 import Basket from './components/Basket'
 import WinnerReveal from './components/WinnerReveal'
 import { motionDurations } from './theme/motion'
-import { getTheme, setTheme, type Theme } from './theme/theme'
+import { getTheme, setTheme, toggleTheme, getAnimations, setAnimations, THEMES, type Theme, type AnimationsSetting } from './theme/theme'
 import { generateBracket, calculatePayouts, getTournamentEntryFee, getTournamentPot, getTournamentLabel } from './logic/tournament'
 import type { TournamentConfig, Player, Match } from './logic/tournament'
 import { supabase } from './lib/supabase'
@@ -67,6 +67,7 @@ function App() {
   const [prevRanks, setPrevRanks] = useState<Record<string, number>>({})
   const [showFinishSummary, setShowFinishSummary] = useState<{ winner: string; payout: number } | null>(null)
   const [theme, setAppTheme] = useState<Theme>(getTheme)
+  const [animations, setAppAnimations] = useState<AnimationsSetting>(getAnimations)
 
   useEffect(() => {
     const handleThemeChange = (e: Event) => {
@@ -77,19 +78,35 @@ function App() {
         setAppTheme(getTheme())
       }
     }
+    const handleAnimChange = (e: Event) => {
+      const customEvent = e as CustomEvent<AnimationsSetting>
+      if (customEvent.detail) {
+        setAppAnimations(customEvent.detail)
+      } else {
+        setAppAnimations(getAnimations())
+      }
+    }
     window.addEventListener('htpn-theme-change', handleThemeChange)
-    return () => window.removeEventListener('htpn-theme-change', handleThemeChange)
+    window.addEventListener('htpn-anim-change', handleAnimChange)
+    return () => {
+      window.removeEventListener('htpn-theme-change', handleThemeChange)
+      window.removeEventListener('htpn-anim-change', handleAnimChange)
+    }
   }, [])
 
   const handleToggleTheme = () => {
-    const next = theme === 'dark' ? 'light' : 'dark'
-    setTheme(next)
+    const next = toggleTheme()
     setAppTheme(next)
   }
 
   const handleSelectTheme = (t: Theme) => {
     setTheme(t)
     setAppTheme(t)
+  }
+
+  const handleToggleAnimations = (anim: AnimationsSetting) => {
+    setAnimations(anim)
+    setAppAnimations(anim)
   }
 
   // Player Management Modals
@@ -1798,9 +1815,10 @@ function App() {
               type="button"
               className="theme-toggle-btn"
               onClick={() => { haptic(); handleToggleTheme(); }}
-              aria-label="Toggle light/dark theme"
+              aria-label={`Cycle theme. Current: ${THEMES.find(t => t.id === theme)?.label || theme}`}
+              title={`Theme: ${THEMES.find(t => t.id === theme)?.label || theme}. Click to cycle`}
             >
-              {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+              <Palette size={20} />
             </button>
             <div className={`bracket-admin-badge ${isAdmin ? 'is-admin' : ''}`}>
               {isAdmin ? <LockOpen size={11} color="var(--neon-amber)" /> : <LockIcon size={11} style={{ opacity: 0.5 }} />}
@@ -2252,19 +2270,19 @@ function App() {
                 <div className="card stat-card" style={{ margin: 0, padding: '0.5rem 0.25rem', textAlign: 'center', background: 'var(--chalk-slate)' }}>
                   <span style={{ fontSize: '0.6rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Total Roster</span>
                   <span style={{ fontSize: '1rem', fontWeight: 900, color: 'var(--chalk-white)', fontVariantNumeric: 'tabular-nums', display: 'block', marginTop: '2px' }}>
-                    <SplitFlap value={Object.keys(players).length} variant="sm" />
+                    <SplitFlap value={Object.keys(players).length} variant="sm" plain />
                   </span>
                 </div>
                 <div className="card stat-card" style={{ margin: 0, padding: '0.5rem 0.25rem', textAlign: 'center', background: 'var(--chalk-slate)', border: '1px solid var(--chalk-border)', boxShadow: 'var(--shadow-sm)' }}>
                   <span style={{ fontSize: '0.6rem', fontWeight: 800, color: 'var(--neon-amber)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Coming Today</span>
                   <span style={{ fontSize: '1rem', fontWeight: 900, color: 'var(--chalk-white)', fontVariantNumeric: 'tabular-nums', display: 'block', marginTop: '2px' }}>
-                    <SplitFlap value={Object.values(players).filter(p => p.status === 'coming').length} variant="sm" />
+                    <SplitFlap value={Object.values(players).filter(p => p.status === 'coming').length} variant="sm" plain />
                   </span>
                 </div>
                 <div className="card stat-card" style={{ margin: 0, padding: '0.5rem 0.25rem', textAlign: 'center', background: 'var(--chalk-slate)', border: '1px solid var(--felt-teal)', boxShadow: 'var(--shadow-sm)' }}>
                   <span style={{ fontSize: '0.6rem', fontWeight: 800, color: 'var(--felt-teal-light)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Career Cash</span>
                   <span style={{ fontSize: '1rem', fontWeight: 900, color: 'var(--felt-teal-light)', fontVariantNumeric: 'tabular-nums', display: 'block', marginTop: '2px' }}>
-                    <SplitFlap value={Object.values(players).reduce((sum, p) => sum + (p.earnings || 0), 0)} prefix="$" variant="sm" />
+                    <SplitFlap value={Object.values(players).reduce((sum, p) => sum + (p.earnings || 0), 0)} prefix="$" variant="sm" plain />
                   </span>
                 </div>
               </div>
@@ -2368,7 +2386,7 @@ function App() {
                       >
                         {/* Rank with SplitFlap */}
                         <div style={{ display: 'flex', alignItems: 'center', minWidth: '24px', flexShrink: 0 }}>
-                          <SplitFlap value={currentRank} minDigits={1} />
+                          <SplitFlap value={currentRank} minDigits={1} plain />
                         </div>
 
                         {/* Left: Player Identity & Compact Stats */}
@@ -2391,13 +2409,13 @@ function App() {
                           {/* Compact Inline Stats with SplitFlap */}
                           <div style={{ display: 'flex', gap: '0.75rem', fontSize: '0.75rem', alignItems: 'center' }}>
                             <span style={{ display: 'flex', alignItems: 'center', gap: '3px', color: 'var(--neon-amber)', fontWeight: 650 }}>
-                              <Trophy size={11} strokeWidth={2.5} /> <SplitFlap value={p.wins || 0} />
+                              <Trophy size={11} strokeWidth={2.5} /> <SplitFlap value={p.wins || 0} plain />
                             </span>
                             <span style={{ display: 'flex', alignItems: 'center', gap: '3px', color: 'var(--felt-teal-light)', fontWeight: 650 }}>
-                              <Coins size={11} strokeWidth={2.5} /> <SplitFlap value={p.earnings || 0} prefix="$" />
+                              <Coins size={11} strokeWidth={2.5} /> <SplitFlap value={p.earnings || 0} prefix="$" plain />
                             </span>
                             <span style={{ display: 'flex', alignItems: 'center', gap: '3px', color: 'var(--chalk-dim)', fontWeight: 650 }}>
-                              <Percent size={11} strokeWidth={2.5} /> <SplitFlap value={winPct} suffix="%" />
+                              <Percent size={11} strokeWidth={2.5} /> <SplitFlap value={winPct} suffix="%" plain />
                             </span>
                           </div>
                         </div>
@@ -2530,7 +2548,7 @@ function App() {
                       <span className={`payout-badge payout-${idx + 1}`} style={{ flexShrink: 0 }}>#{idx + 1}</span>
                       <span style={{ fontWeight: 800, fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0, color: 'var(--chalk-white)' }}>{p.name}</span>
                     </div>
-                    <span style={{ color: idx === 0 ? 'var(--neon-amber)' : 'var(--chalk-white)', fontWeight: 850, fontVariantNumeric: 'tabular-nums', flexShrink: 0, fontSize: '0.95rem' }}><SplitFlap value={p.earnings || 0} prefix="$" /></span>
+                    <span style={{ color: idx === 0 ? 'var(--neon-amber)' : 'var(--chalk-white)', fontWeight: 850, fontVariantNumeric: 'tabular-nums', flexShrink: 0, fontSize: '0.95rem' }}><SplitFlap value={p.earnings || 0} prefix="$" plain /></span>
                   </div>
                 ))}
               </div>
@@ -2609,27 +2627,84 @@ function App() {
 
                <div className="card">
                  <div className="card-title">
-                   {theme === 'dark' ? <Moon size={20} className="accent-text" /> : <Sun size={20} className="accent-text" />}
-                   Theme
+                   <Palette size={20} className="accent-text" />
+                   Theme & Appearance
                  </div>
+                 <div className="option-group" style={{ marginBottom: '1rem' }}>
+                   <label style={{ display: 'block', marginBottom: '0.5rem' }}>Theme</label>
+                   <div style={{
+                     display: 'grid',
+                     gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))',
+                     gap: '0.5rem',
+                   }}>
+                     {THEMES.map(t => {
+                       const isSelected = theme === t.id
+                       return (
+                         <button
+                           key={t.id}
+                           type="button"
+                           aria-pressed={isSelected}
+                           className={`btn ${isSelected ? 'btn-primary' : 'btn-secondary'}`}
+                           style={{
+                             display: 'flex',
+                             flexDirection: 'column',
+                             alignItems: 'center',
+                             justifyContent: 'center',
+                             padding: '0.6rem 0.4rem',
+                             minHeight: '66px',
+                             gap: '0.35rem',
+                             border: isSelected ? '2px solid var(--primary)' : '1px solid var(--chalk-border)',
+                             boxShadow: isSelected ? '0 0 10px var(--primary-glow)' : 'none',
+                           }}
+                           onClick={() => { haptic(); handleSelectTheme(t.id); }}
+                         >
+                           <div style={{ display: 'flex', gap: '3px', alignItems: 'center' }}>
+                             {t.colors.map((c, i) => (
+                               <span
+                                 key={i}
+                                 style={{
+                                   width: '12px',
+                                   height: '12px',
+                                   borderRadius: '50%',
+                                   backgroundColor: c,
+                                   border: '1px solid rgba(255, 255, 255, 0.25)',
+                                   display: 'inline-block',
+                                   flexShrink: 0,
+                                 }}
+                               />
+                             ))}
+                           </div>
+                           <span style={{ fontSize: '0.75rem', fontWeight: 700, textAlign: 'center', whiteSpace: 'normal', lineHeight: 1.15 }}>
+                             {t.label}
+                           </span>
+                         </button>
+                       )
+                     })}
+                   </div>
+                 </div>
+
                  <div className="option-group" style={{ marginBottom: 0 }}>
-                   <label>Theme</label>
+                   <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.5rem' }}>
+                     <Sparkles size={16} className="accent-text" /> Animations
+                   </label>
                    <div style={{ display: 'flex', gap: '0.5rem' }}>
                      <button
                        type="button"
-                       className={`btn ${theme === 'dark' ? 'btn-primary' : 'btn-secondary'}`}
-                       style={{ flex: 1, minHeight: '48px' }}
-                       onClick={() => { haptic(); handleSelectTheme('dark'); }}
+                       aria-pressed={animations === 'on'}
+                       className={`btn ${animations === 'on' ? 'btn-primary' : 'btn-secondary'}`}
+                       style={{ flex: 1, minHeight: '44px' }}
+                       onClick={() => { haptic(); handleToggleAnimations('on'); }}
                      >
-                       <Moon size={16} /> Dark
+                       On
                      </button>
                      <button
                        type="button"
-                       className={`btn ${theme === 'light' ? 'btn-primary' : 'btn-secondary'}`}
-                       style={{ flex: 1, minHeight: '48px' }}
-                       onClick={() => { haptic(); handleSelectTheme('light'); }}
+                       aria-pressed={animations === 'off'}
+                       className={`btn ${animations === 'off' ? 'btn-primary' : 'btn-secondary'}`}
+                       style={{ flex: 1, minHeight: '44px' }}
+                       onClick={() => { haptic(); handleToggleAnimations('off'); }}
                      >
-                       <Sun size={16} /> Light
+                       Off
                      </button>
                    </div>
                  </div>
