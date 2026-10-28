@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useLayoutEffect, useMemo, useRef, type ReactNode } from 'react'
 import { Plus, Trophy, Trash2, ChevronRight, Settings2, User, Swords, History, UserPlus, ArrowLeft, LockOpen, Lock as LockIcon, QrCode, Coins, Percent, Edit2, Check, X, Shuffle, GitMerge, Sliders, AlertTriangle, Tv, Minimize2, ArrowLeftRight, MoreVertical, RotateCcw, Crown, Info, Palette, Sparkles } from 'lucide-react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import SplitFlap from './components/SplitFlap'
@@ -22,6 +22,76 @@ const isToday = (timestamp: number) => {
   return date.getDate() === today.getDate() &&
     date.getMonth() === today.getMonth() &&
     date.getFullYear() === today.getFullYear()
+}
+
+// Wraps the pan/zoom bracket and picks the opening scale so the whole bracket
+// (round 1, long names and all) fits the screen. Pan and pinch still work.
+function BracketViewport({ resetKey, children }: { resetKey: string; children: ReactNode }) {
+  const hostRef = useRef<HTMLDivElement>(null)
+  const [scale, setScale] = useState(0.6)
+
+  const measure = () => {
+    const box = hostRef.current?.querySelector('.bracket-container') as HTMLElement | null
+    if (!box || box.children.length === 0) return null
+    const cs = getComputedStyle(box)
+    const gap = parseFloat(cs.columnGap) || 0
+    const kids = Array.from(box.children) as HTMLElement[]
+    const padX = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0)
+    const padY = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0)
+    const contentW = kids.reduce((sum, k) => sum + k.offsetWidth, 0) + gap * (kids.length - 1) + padX
+    const contentH = Math.max(...kids.map(k => k.offsetHeight)) + padY
+    if (!contentW || !contentH) return null
+    const fit = Math.min((window.innerWidth * 0.96) / contentW, (window.innerHeight * 0.9) / contentH)
+    return Math.max(0.15, Math.min(1, fit))
+  }
+
+  useLayoutEffect(() => {
+    const next = measure()
+    // measuring the laid-out DOM then adjusting state is the intended use of a layout effect
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (next !== null) setScale(prev => (Math.abs(prev - next) > 0.03 ? next : prev))
+  }, [resetKey])
+
+  useEffect(() => {
+    let lastWidth = window.innerWidth
+    let timer: number | undefined
+    const onResize = () => {
+      window.clearTimeout(timer)
+      timer = window.setTimeout(() => {
+        // only re-fit on a real width change (rotation / window resize), not mobile address-bar height changes
+        if (Math.abs(window.innerWidth - lastWidth) < 60) return
+        lastWidth = window.innerWidth
+        const next = measure()
+        if (next !== null) setScale(prev => (Math.abs(prev - next) > 0.03 ? next : prev))
+      }, 250)
+    }
+    window.addEventListener('resize', onResize)
+    return () => { window.removeEventListener('resize', onResize); window.clearTimeout(timer) }
+  }, [])
+
+  return (
+    <div ref={hostRef} style={{ width: '100%', height: '100%' }}>
+      <TransformWrapper
+        key={scale.toFixed(2)}
+        initialScale={scale}
+        minScale={scale * 0.5}
+        maxScale={2}
+        centerOnInit={true}
+        centerZoomedOut={true}
+        limitToBounds={true}
+      >
+        {() => (
+          <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+            <div style={{ flex: 1, overflow: 'hidden' }}>
+              <TransformComponent wrapperStyle={{ width: '100vw', height: '100vh' }}>
+                {children}
+              </TransformComponent>
+            </div>
+          </div>
+        )}
+      </TransformWrapper>
+    </div>
+  )
 }
 
 function App() {
@@ -145,6 +215,12 @@ function App() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
   const [showQR, setShowQR] = useState(false)
   const [showRivalryMatch, setShowRivalryMatch] = useState<Match | null>(null)
+  useEffect(() => {
+    if (!showRivalryMatch) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowRivalryMatch(null) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [showRivalryMatch])
   const [playerSort, setPlayerSort] = useState<'name' | 'wins' | 'earnings' | 'pct'>('name')
   const [playerFilter, setPlayerFilter] = useState<'all' | 'coming'>('all')
 
@@ -371,7 +447,8 @@ function App() {
       const len = players[id]?.name.length || 0
       return len > max ? len : max
     }, 0)
-    return Math.max(100, maxLen * 8 + 30)
+    // cap so one very long name can't blow the whole bracket out; the name ellipsizes inside its plate
+    return Math.min(200, Math.max(100, maxLen * 8 + 30))
   }, [activeTournament, viewingPastTourney, players])
 
   useEffect(() => {
@@ -1747,61 +1824,42 @@ function App() {
     const roundStyle = { minWidth: `${plateWidth}px` }
     const centerWidth = Math.max(160, plateWidth * 1.2)
 
-    const playerCount = (tourney.config.players || []).length
-    const roundsCount = Math.ceil(Math.log2(playerCount || 2))
-    const initialScale = roundsCount > 4 ? 0.35 : (roundsCount > 3 ? 0.45 : 0.6)
-
     return (
-      <TransformWrapper
-        initialScale={initialScale}
-        minScale={initialScale * 0.5}
-        maxScale={2}
-        centerOnInit={true}
-        centerZoomedOut={true}
-        limitToBounds={true}
-      >
-        {() => (
-          <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', position: 'relative' }}>
-            <div style={{ flex: 1, overflow: 'hidden' }}>
-              <TransformComponent wrapperStyle={{ width: '100vw', height: '100vh' }}>
-                <div className="bracket-container">
-                  <div className="bracket-side">
-                    {rounds.slice(0, -1).map(round => (
-                      <div key={`left-${round}`} className="bracket-round" style={roundStyle}>
-                        <span className="stat-label" style={{ textAlign: 'center', marginBottom: '0.5rem' }}>Round {round}</span>
-                        {leftMatches.filter(m => m.round === round).sort((a, b) => a.order - b.order).map(m => renderMatch(m, tourney))}
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="bracket-center" style={{ minWidth: `${centerWidth}px` }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', justifyContent: 'center', marginBottom: '0.25rem' }}>
-                      <Trophy size={13} className="accent-text" />
-                      <span className="stat-label" style={{ color: 'var(--accent)', fontWeight: 900, letterSpacing: '0.14em' }}>CHAMPIONSHIP</span>
-                    </div>
-                    {centerMatch && <div style={{ width: '100%' }}>{renderMatch(centerMatch, tourney)}</div>}
-                    {consolationMatch && (
-                      <div style={{ width: '150px', marginTop: '2rem' }}>
-                        <span className="stat-label" style={{ display: 'block', textAlign: 'center', marginBottom: '0.4rem' }}>3rd Place Match</span>
-                        {renderMatch(consolationMatch, tourney)}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="bracket-side right">
-                    {rounds.slice(0, -1).map(round => (
-                      <div key={`right-${round}`} className="bracket-round" style={roundStyle}>
-                        <span className="stat-label" style={{ textAlign: 'center', marginBottom: '0.5rem' }}>Round {round}</span>
-                        {rightMatches.filter(m => m.round === round).sort((a, b) => a.order - b.order).map(m => renderMatch(m, tourney))}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </TransformComponent>
-            </div>
+      <BracketViewport resetKey={`${tourney.id}-${plateWidth}-${rounds.length}`}>
+        <div className="bracket-container">
+          <div className="bracket-side">
+            {rounds.slice(0, -1).map(round => (
+              <div key={`left-${round}`} className="bracket-round" style={roundStyle}>
+                <span className="stat-label" style={{ textAlign: 'center', marginBottom: '0.5rem' }}>Round {round}</span>
+                {leftMatches.filter(m => m.round === round).sort((a, b) => a.order - b.order).map(m => renderMatch(m, tourney))}
+              </div>
+            ))}
           </div>
-        )}
-      </TransformWrapper>
+
+          <div className="bracket-center" style={{ minWidth: `${centerWidth}px` }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', justifyContent: 'center', marginBottom: '0.25rem' }}>
+              <Trophy size={13} className="accent-text" />
+              <span className="stat-label" style={{ color: 'var(--accent)', fontWeight: 900, letterSpacing: '0.14em' }}>CHAMPIONSHIP</span>
+            </div>
+            {centerMatch && <div style={{ width: '100%' }}>{renderMatch(centerMatch, tourney)}</div>}
+            {consolationMatch && (
+              <div style={{ width: '150px', marginTop: '2rem' }}>
+                <span className="stat-label" style={{ display: 'block', textAlign: 'center', marginBottom: '0.4rem' }}>3rd Place Match</span>
+                {renderMatch(consolationMatch, tourney)}
+              </div>
+            )}
+          </div>
+
+          <div className="bracket-side right">
+            {rounds.slice(0, -1).map(round => (
+              <div key={`right-${round}`} className="bracket-round" style={roundStyle}>
+                <span className="stat-label" style={{ textAlign: 'center', marginBottom: '0.5rem' }}>Round {round}</span>
+                {rightMatches.filter(m => m.round === round).sort((a, b) => a.order - b.order).map(m => renderMatch(m, tourney))}
+              </div>
+            ))}
+          </div>
+        </div>
+      </BracketViewport>
     )
   }
 
@@ -3208,7 +3266,7 @@ function App() {
 
           {/* EDIT PAST TOURNAMENT CONFIG MODAL */}
           {editingPastTourneyConfig && (
-            <motion.div className="modal-overlay" onClick={() => setEditingPastTourneyConfig(null)}>
+            <motion.div className="modal-overlay" style={{ zIndex: 1100 }} onClick={() => setEditingPastTourneyConfig(null)}>
               <div className="modal-content" onClick={e => e.stopPropagation()}>
                 <h3 className="card-title"><Edit2 size={18} className="accent-text" /> Edit Past Tournament</h3>
                 <p style={{ fontSize: '0.8rem', opacity: 0.7, marginBottom: '1.25rem' }}>
@@ -3278,7 +3336,7 @@ function App() {
 
           {/* CONFIRM DELETE PAST TOURNAMENT MODAL */}
           {confirmDeleteTourney && (
-            <motion.div className="modal-overlay" onClick={() => setConfirmDeleteTourney(null)}>
+            <motion.div className="modal-overlay" style={{ zIndex: 1100 }} onClick={() => setConfirmDeleteTourney(null)}>
               <div className="modal-content" onClick={e => e.stopPropagation()}>
                 <h3 className="card-title" style={{ color: 'var(--neon-red)' }}><AlertTriangle size={20} /> Delete Tournament?</h3>
                 <p style={{ fontSize: '0.85rem', opacity: 0.8, marginBottom: '1rem' }}>
