@@ -1,5 +1,5 @@
 import { useState, useEffect, useLayoutEffect, useMemo, useRef, type ReactNode } from 'react'
-import { Plus, Trophy, Trash2, ChevronRight, Settings2, User, Swords, History, UserPlus, ArrowLeft, LockOpen, Lock as LockIcon, QrCode, Coins, Percent, Edit2, Check, X, Shuffle, GitMerge, Sliders, AlertTriangle, Tv, Minimize2, ArrowLeftRight, MoreVertical, RotateCcw, Crown, Info, Palette, Sparkles } from 'lucide-react'
+import { Plus, Trophy, Trash2, ChevronRight, Settings2, User, Swords, History, UserPlus, ArrowLeft, LockOpen, Lock as LockIcon, QrCode, Coins, Percent, Edit2, Check, X, Shuffle, GitMerge, Sliders, AlertTriangle, Tv, Minimize2, ArrowLeftRight, MoreVertical, RotateCcw, Crown, Info, Palette, Sparkles, Crosshair, Maximize2 } from 'lucide-react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import SplitFlap from './components/SplitFlap'
 import Basket from './components/Basket'
@@ -10,7 +10,7 @@ import { generateBracket, calculatePayouts, getTournamentEntryFee, getTournament
 import type { TournamentConfig, Player, Match } from './logic/tournament'
 import { supabase } from './lib/supabase'
 import { useAdmin } from './lib/auth'
-import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch'
+import { TransformWrapper, TransformComponent, type ReactZoomPanPinchRef } from 'react-zoom-pan-pinch'
 import { HornyToadLogo } from './components/HornyToadLogo'
 import './index.css'
 
@@ -24,13 +24,27 @@ const isToday = (timestamp: number) => {
     date.getFullYear() === today.getFullYear()
 }
 
-// Wraps the pan/zoom bracket and picks the opening scale so the whole bracket
-// (round 1, long names and all) fits the screen. Pan and pinch still work.
-function BracketViewport({ resetKey, children }: { resetKey: string; children: ReactNode }) {
-  const hostRef = useRef<HTMLDivElement>(null)
-  const [scale, setScale] = useState(0.6)
+// Smallest scale at which player names stay readable (13.2px name text * 0.85 is about 11px).
+const READABLE_SCALE = 0.85
+// A whole-bracket fit at or above this still keeps names readable (about 10.6px), so tablets / TVs just fit to screen.
+const FIT_OK_SCALE = 0.8
 
-  const measure = () => {
+type BracketLayout = { fit: number; initial: number; focus: boolean; vw: number }
+
+// Wraps the pan/zoom bracket. If the whole bracket fits at a readable scale (tablet / TV) it opens
+// fit-to-screen. Otherwise (phones) it opens at a readable scale centered on the live / next match,
+// and a small "Fit all" / "Reset" button toggles the overview. Pan and pinch are unchanged.
+function BracketViewport({ resetKey, focusMatchId, children }: { resetKey: string; focusMatchId: string | null; children: ReactNode }) {
+  const hostRef = useRef<HTMLDivElement>(null)
+  const apiRef = useRef<ReactZoomPanPinchRef | null>(null)
+  const [layout, setLayout] = useState<BracketLayout>({ fit: READABLE_SCALE, initial: READABLE_SCALE, focus: false, vw: 0 })
+  const layoutRef = useRef(layout)
+  const focusIdRef = useRef(focusMatchId)
+  useEffect(() => { layoutRef.current = layout; focusIdRef.current = focusMatchId })
+  const [readyKey, setReadyKey] = useState('')
+  const [atFit, setAtFit] = useState(false)
+
+  const measure = (): BracketLayout | null => {
     const box = hostRef.current?.querySelector('.bracket-container') as HTMLElement | null
     if (!box || box.children.length === 0) return null
     const cs = getComputedStyle(box)
@@ -41,15 +55,25 @@ function BracketViewport({ resetKey, children }: { resetKey: string; children: R
     const contentW = kids.reduce((sum, k) => sum + k.offsetWidth, 0) + gap * (kids.length - 1) + padX
     const contentH = Math.max(...kids.map(k => k.offsetHeight)) + padY
     if (!contentW || !contentH) return null
-    const fit = Math.min((window.innerWidth * 0.96) / contentW, (window.innerHeight * 0.9) / contentH)
-    return Math.max(0.15, Math.min(1, fit))
+    const fit = Math.max(0.15, Math.min(1, Math.min((window.innerWidth * 0.96) / contentW, (window.innerHeight * 0.9) / contentH)))
+    const focus = fit < FIT_OK_SCALE
+    return { fit, focus, initial: focus ? READABLE_SCALE : fit, vw: window.innerWidth }
+  }
+
+  const applyLayout = (next: BracketLayout | null) => {
+    if (!next) return
+    // On phones the floating header covers the top of the bracket: leave room above the first row so it is never hidden under it.
+    const overlay = (hostRef.current?.closest('.modal-overlay') || document).querySelector('.bracket-controls-overlay')
+    const inset = overlay ? Math.max(0, overlay.getBoundingClientRect().bottom) : 0
+    if (next.focus && inset > 0) hostRef.current?.style.setProperty('--bracket-top-pad', `${Math.ceil(inset / READABLE_SCALE)}px`)
+    else hostRef.current?.style.removeProperty('--bracket-top-pad')
+    setLayout(prev => (prev.focus === next.focus && Math.abs(prev.initial - next.initial) <= 0.03 && Math.abs(prev.fit - next.fit) <= 0.03 && prev.vw === next.vw ? prev : next))
   }
 
   useLayoutEffect(() => {
-    const next = measure()
     // measuring the laid-out DOM then adjusting state is the intended use of a layout effect
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (next !== null) setScale(prev => (Math.abs(prev - next) > 0.03 ? next : prev))
+    applyLayout(measure())
   }, [resetKey])
 
   useEffect(() => {
@@ -58,27 +82,81 @@ function BracketViewport({ resetKey, children }: { resetKey: string; children: R
     const onResize = () => {
       window.clearTimeout(timer)
       timer = window.setTimeout(() => {
-        // only re-fit on a real width change (rotation / window resize), not mobile address-bar height changes
+        // only re-lay-out on a real width change (rotation / window resize), not mobile address-bar height changes
         if (Math.abs(window.innerWidth - lastWidth) < 60) return
         lastWidth = window.innerWidth
-        const next = measure()
-        if (next !== null) setScale(prev => (Math.abs(prev - next) > 0.03 ? next : prev))
+        applyLayout(measure())
       }, 250)
     }
     window.addEventListener('resize', onResize)
     return () => { window.removeEventListener('resize', onResize); window.clearTimeout(timer) }
   }, [])
 
+  // Put content point (tx, ty) (unscaled content px) in view at scale s, kept inside the pan bounds.
+  const place = (api: ReactZoomPanPinchRef, s: number, tx: number | null, ty: number | null, animMs: number) => {
+    const host = hostRef.current
+    const content = host?.querySelector('.react-transform-component') as HTMLElement | null
+    const wrapper = host?.querySelector('.react-transform-wrapper') as HTMLElement | null
+    if (!content || !wrapper) return
+    const W = wrapper.clientWidth, H = wrapper.clientHeight
+    const cw = content.offsetWidth * s, ch = content.offsetHeight * s
+    const overlay = (host?.closest('.modal-overlay') || document).querySelector('.bracket-controls-overlay')
+    const inset = overlay ? Math.max(0, overlay.getBoundingClientRect().bottom) : 0
+    const axis = (size: number, view: number, point: number | null, lo: number) => {
+      if (size <= view) return (view - size) / 2
+      const want = point === null ? (view - size) / 2 : lo + (view - lo) / 2 - point * s
+      return Math.min(0, Math.max(view - size, want))
+    }
+    api.setTransform(axis(cw, W, tx, 0), axis(ch, H, ty, inset), s, animMs)
+  }
+
+  const focusTarget = (api: ReactZoomPanPinchRef, s: number, animMs: number) => {
+    const host = hostRef.current
+    const content = host?.querySelector('.react-transform-component') as HTMLElement | null
+    const id = focusIdRef.current
+    const el = id && content ? (Array.from(content.querySelectorAll('[data-match-id]')) as HTMLElement[]).find(n => n.dataset.matchId === id) : null
+    if (!content || !el) return place(api, s, null, null, animMs)
+    const cur = api.state.scale || 1
+    const r = el.getBoundingClientRect(), c = content.getBoundingClientRect()
+    place(api, s, (r.left - c.left + r.width / 2) / cur, (r.top - c.top + r.height / 2) / cur, animMs)
+  }
+
+  const wrapperKey = `${resetKey}|${layout.focus ? 'f' : 'a'}|${layout.initial.toFixed(2)}|${layout.vw}`
+  useEffect(() => {
+    const t = window.setTimeout(() => setReadyKey(wrapperKey), 500) // safety net: never leave the bracket hidden
+    return () => window.clearTimeout(t)
+  }, [wrapperKey])
+
+  const onInit = (api: ReactZoomPanPinchRef) => {
+    apiRef.current = api
+    setAtFit(false)
+    // let the library finish its own init (it resets the transform), then jump to the live match with no animation
+    window.setTimeout(() => {
+      if (layoutRef.current.focus) focusTarget(api, layoutRef.current.initial, 0)
+      setReadyKey(wrapperKey)
+    }, 60)
+  }
+
+  const toggleFit = () => {
+    const api = apiRef.current
+    if (!api) return
+    const l = layoutRef.current
+    if (atFit) focusTarget(api, l.initial, 300)
+    else place(api, l.fit, null, null, 300)
+  }
+
   return (
-    <div ref={hostRef} style={{ width: '100%', height: '100%' }}>
+    <div ref={hostRef} style={{ width: '100%', height: '100%', opacity: readyKey === wrapperKey ? 1 : 0 }}>
       <TransformWrapper
-        key={scale.toFixed(2)}
-        initialScale={scale}
-        minScale={scale * 0.5}
+        key={wrapperKey}
+        initialScale={layout.initial}
+        minScale={Math.min(layout.fit, layout.initial) * 0.8}
         maxScale={2}
-        centerOnInit={true}
+        centerOnInit={!layout.focus}
         centerZoomedOut={true}
         limitToBounds={true}
+        onInit={onInit}
+        onTransform={(_ref, state) => setAtFit(state.scale < (layoutRef.current.fit + layoutRef.current.initial) / 2)}
       >
         {() => (
           <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', position: 'relative' }}>
@@ -90,6 +168,17 @@ function BracketViewport({ resetKey, children }: { resetKey: string; children: R
           </div>
         )}
       </TransformWrapper>
+      {layout.focus && (
+        <button
+          type="button"
+          className="bracket-fit-btn"
+          onClick={toggleFit}
+          title={atFit ? 'Back to the live match' : 'Show the whole bracket'}
+        >
+          {atFit ? <Crosshair size={15} /> : <Maximize2 size={15} />}
+          <span>{atFit ? 'Reset' : 'Fit all'}</span>
+        </button>
+      )}
     </div>
   )
 }
@@ -1716,7 +1805,7 @@ function App() {
     }
 
     return (
-      <div key={match.id} className="match-node">
+      <div key={match.id} data-match-id={match.id} className="match-node">
         <div className={`match-card ${isFinal ? 'final-match' : ''}`}>
           <div 
             className={`player-slot ${match.winnerId === match.player1Id ? 'winner' : ''} ${!match.player1Id && match.score === 'BYE' ? 'bye' : ''}`}
@@ -1821,11 +1910,17 @@ function App() {
     const centerMatch = matches.find(m => m.round === finalRound && !m.isConsolation)
     const consolationMatch = matches.find(m => m.isConsolation)
 
+    // Where the bracket opens on a phone: the live / next playable match, else the championship once finished.
+    const playable = matches
+      .filter(m => !m.winnerId && m.player1Id && m.player2Id)
+      .sort((a, b) => Number(!!a.isConsolation) - Number(!!b.isConsolation) || a.round - b.round || a.order - b.order)
+    const focusMatchId = playable[0]?.id ?? centerMatch?.id ?? null
+
     const roundStyle = { minWidth: `${plateWidth}px` }
     const centerWidth = Math.max(160, plateWidth * 1.2)
 
     return (
-      <BracketViewport resetKey={`${tourney.id}-${plateWidth}-${rounds.length}`}>
+      <BracketViewport resetKey={`${tourney.id}-${plateWidth}-${rounds.length}`} focusMatchId={focusMatchId}>
         <div className="bracket-container">
           <div className="bracket-side">
             {rounds.slice(0, -1).map(round => (
