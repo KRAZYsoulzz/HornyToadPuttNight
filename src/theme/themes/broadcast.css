@@ -426,3 +426,38 @@
   35% { left: 180%; }
   100% { left: 180%; }
 }
+
+/* AA contrast fixes (bracket sits on the dark turf, outside the white cards) */
+[data-theme="broadcast"] .bracket-round > .stat-label,
+[data-theme="broadcast"] .bracket-center .stat-label {
+  color: #CBD5E1;
+}
+
+[data-theme="broadcast"] .bracket-center .stat-label[style*="--accent"],
+[data-theme="broadcast"] .bracket-pot-group span[style*="--accent"] {
+  color: #E5B842 !important;
+}
+
+/* faded win % / seed helper text on white and winner plates */
+[data-theme="broadcast"] .player-slot span[style*="opacity: 0.4"] {
+  opacity: 1 !important;
+  color: #475569 !important;
+}
+
+/* amber chips: white text instead of dark green (>= 5:1 on the amber) */
+[data-theme="broadcast"] .card { --neon-amber: #92400E; --accent: #92400E; }
+[data-theme="broadcast"] .card span[style*="--on-primary"],
+[data-theme="broadcast"] .player-glass-card .payout-1,
+[data-theme="broadcast"] .payout-1 {
+  color: #FFFFFF !important;
+}
+
+[data-theme="broadcast"] .payout-1 {
+  background-color: #92400E;
+  border-color: #92400E;
+}
+
+/* Config footer button sits on the turf, not a card */
+[data-theme="broadcast"] .app-container button[style*="--chalk-faint"] {
+  color: #CBD5E1 !important;
+}

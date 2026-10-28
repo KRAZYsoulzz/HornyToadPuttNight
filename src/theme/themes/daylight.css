@@ -12,18 +12,18 @@
   
   --chalk-white: #121010; /* Ink text */
   --chalk-dim: #555048; /* Muted text (AA contrast) */
-  --chalk-faint: #756E65; /* Faint text (AA contrast) */
+  --chalk-faint: #5F584F; /* Faint text (AA contrast, incl. on panel/winner fills) */
   
-  --neon-amber: #A86600; /* Darker amber for AA contrast on light bg */
-  --neon-amber-dim: #8F5500;
+  --neon-amber: #7F4C00; /* Darker amber: AA (>=4.5:1) on paper, panels and winner fills */
+  --neon-amber-dim: #6F4200;
   --neon-amber-glow: none; /* No text-shadow glow in light mode */
-  --neon-amber-box-glow: 0 0 0 1.5px #A86600; /* Subtle colored edge */
+  --neon-amber-box-glow: 0 0 0 1.5px #7F4C00; /* Subtle colored edge */
 
-  --neon-red: #D23A2E; /* Red */
-  --neon-red-dark: #A6281E;
+  --neon-red: #A6281E; /* Red (AA on panels) */
+  --neon-red-dark: #8A1F17;
 
   --felt-teal: #17605B; /* Money teal */
-  --felt-teal-light: #1F7973;
+  --felt-teal-light: #17605B; /* AA on panels */
   --felt-teal-dark: #104541;
 
   --ink: #121010;
@@ -39,7 +39,7 @@
   --bg-input: var(--chalk-slate-dark);
 
   --primary: var(--neon-amber);
-  --primary-hover: #8F5500;
+  --primary-hover: #6F4200;
   --primary-glow: var(--neon-amber-box-glow);
 
   --secondary: var(--chalk-slate-light);
@@ -103,16 +103,16 @@
 [data-theme="daylight"] .match-score,
 [data-theme="light"] .match-score {
   background-color: #ECE5D8 !important;
-  color: #A86600 !important;
-  border: 1.5px solid #A86600 !important;
+  color: #7F4C00 !important;
+  border: 1.5px solid #7F4C00 !important;
   box-shadow: 0 1px 3px rgba(18, 16, 16, 0.12) !important;
 }
 
 [data-theme="daylight"] .match-score .split-flap-digit,
 [data-theme="light"] .match-score .split-flap-digit {
   background: #ECE5D8 !important;
-  border: 1px solid #A86600 !important;
-  color: #A86600 !important;
+  border: 1px solid #7F4C00 !important;
+  color: #7F4C00 !important;
   font-size: 0.85rem !important;
   min-width: 1.6ch !important;
   overflow: visible !important;
@@ -123,3 +123,16 @@
   display: none !important;
 }
 
+
+/* AA contrast: small faded helper text in the bracket (win %, TOTAL POT) was inline opacity .4/.5 */
+[data-theme="daylight"] .player-slot span[style*="opacity: 0.4"],
+[data-theme="light"] .player-slot span[style*="opacity: 0.4"] {
+  opacity: 1 !important;
+  color: var(--chalk-dim) !important;
+}
+
+[data-theme="daylight"] .bracket-pot-group span[style*="opacity: 0.5"],
+[data-theme="light"] .bracket-pot-group span[style*="opacity: 0.5"] {
+  opacity: 1 !important;
+  color: var(--chalk-dim) !important;
+}
