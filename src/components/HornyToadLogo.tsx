@@ -13,8 +13,8 @@ export const HornyToadEmblem: React.FC<{ size?: number; className?: string }> = 
 }) => {
   return (
     <img
-      src="/icon-192.png"
-      srcSet="/icon-192.png 1x, /icon-512.png 2x"
+      src="/icon-v2-192.png"
+      srcSet="/icon-v2-192.png 1x, /icon-v2-512.png 2x"
       alt="Horny Toad Putt Night"
       width={size}
       height={size}
