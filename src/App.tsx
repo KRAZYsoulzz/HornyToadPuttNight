@@ -6,7 +6,7 @@ import Basket from './components/Basket'
 import WinnerReveal from './components/WinnerReveal'
 import { motionDurations } from './theme/motion'
 import { getTheme, setTheme, toggleTheme, getAnimations, setAnimations, THEMES, type Theme, type AnimationsSetting } from './theme/theme'
-import { generateBracket, calculatePayouts, getTournamentEntryFee, getTournamentPot, getTournamentLabel, removePlayerFromBracket, swapPlayerWithBye } from './logic/tournament'
+import { generateBracket, calculatePayouts, getTournamentEntryFee, getTournamentPot, getTournamentLabel, removePlayerFromBracket, swapPlayerWithBye, isRealResult, applyPaidLedgerOnRemove, computePlayersOwed, createBracketEditSnapshot, type RefundNotice, type BracketEditSnapshot } from './logic/tournament'
 import type { TournamentConfig, Player, Match } from './logic/tournament'
 import { supabase } from './lib/supabase'
 import { useAdmin } from './lib/auth'
@@ -381,6 +381,7 @@ function App() {
       if (storedDate !== todayStr) {
         localStorage.setItem('puttNightPaidDate', todayStr)
         localStorage.setItem('puttNightPaidTonight', '[]')
+        localStorage.setItem('puttNightRefundsTonight', '[]')
         return []
       }
       const stored = localStorage.getItem('puttNightPaidTonight')
@@ -393,6 +394,35 @@ function App() {
   useEffect(() => {
     localStorage.setItem('puttNightPaidTonight', JSON.stringify(paidTonight))
   }, [paidTonight])
+
+  const [refundsTonight, setRefundsTonight] = useState<RefundNotice[]>(() => {
+    try {
+      const storedDate = localStorage.getItem('puttNightPaidDate')
+      const todayStr = new Date().toDateString()
+      if (storedDate !== todayStr) return []
+      const stored = localStorage.getItem('puttNightRefundsTonight')
+      return stored ? JSON.parse(stored) : []
+    } catch {
+      return []
+    }
+  })
+
+  useEffect(() => {
+    localStorage.setItem('puttNightRefundsTonight', JSON.stringify(refundsTonight))
+  }, [refundsTonight])
+
+  const [bracketEditUndo, setBracketEditUndo] = useState<BracketEditSnapshot | null>(null)
+
+  const snapshotBracketEdit = (label: string) => {
+    if (!activeTournament) return
+    setBracketEditUndo(createBracketEditSnapshot({
+      matches: activeTournament.matches,
+      config: activeTournament.config,
+      paidTonight,
+      refundsTonight,
+      label,
+    }))
+  }
 
   const togglePaidStatus = (pId: string) => {
     if (!isAdmin) return
@@ -578,44 +608,11 @@ function App() {
   }
 
   const playersOwedMap = useMemo(() => {
-    const owed: Record<string, number> = {}
-    
-    // Initialize active/known players to 0
-    Object.keys(players).forEach(id => {
-      owed[id] = 0
-    })
-
-    const countTourney = (t: { config: TournamentConfig; id: string; matches?: any[] }) => {
-      const timestamp = parseInt(t.id)
-      if (isNaN(timestamp) || !isToday(timestamp)) return
-
-      // Only count if it is currently the active tournament OR a completed tournament (final match has a winner)
-      const isCurrentlyActive = activeTournament && activeTournament.id === t.id
-      const finalMatch = t.matches?.find((m: any) => m.nextMatchId === null && !m.isConsolation)
-      const isCompleted = finalMatch && finalMatch.winnerId !== null
-
-      if (!isCurrentlyActive && !isCompleted) return
-
-      const entryFee = getTournamentEntryFee(t.config)
-      const uniquePlayerIds = Array.from(new Set(t.config.players || []))
-      uniquePlayerIds.forEach(pId => {
-        if (owed[pId] !== undefined) {
-          owed[pId] += entryFee
-        } else {
-          owed[pId] = entryFee
-        }
-      })
-    }
-
-    if (activeTournament) {
-      countTourney(activeTournament)
-    }
-
-    pastTournaments.forEach(t => {
-      countTourney(t)
-    })
-
-    return owed
+    const tourneys = [
+      ...(activeTournament ? [activeTournament] : []),
+      ...pastTournaments,
+    ]
+    return computePlayersOwed(Object.keys(players), tourneys, activeTournament?.id ?? null)
   }, [players, activeTournament, pastTournaments])
 
   const tourneyHasStarted = useMemo(() => {
@@ -648,6 +645,7 @@ function App() {
       return
     }
     if (!activeTournament || tourneyHasStarted) return
+    setBracketEditUndo(null)
     haptic('success')
     const newMatches = generateBracket(activeTournament.config, players)
 
@@ -670,6 +668,7 @@ function App() {
       return
     }
     if (!activeTournament) return
+    setBracketEditUndo(null)
     haptic('success')
 
     const updatedMatches = activeTournament.matches.map(m => {
@@ -725,6 +724,30 @@ function App() {
     }
   }
 
+  const handleUndoBracketEdit = async () => {
+    if (!isAdmin) {
+      alert(VIEW_ONLY_HINT)
+      return
+    }
+    if (!activeTournament || !bracketEditUndo) return
+    const snap = bracketEditUndo
+    haptic('success')
+    setActiveTournament(prev => prev ? { ...prev, matches: snap.matches, config: snap.config } : null)
+    setPaidTonight(snap.paidTonight)
+    setRefundsTonight(snap.refundsTonight)
+    setBracketEditUndo(null)
+    setSwapSelection(null)
+
+    const { error } = await supabase.from('tournaments').update({
+      matches: snap.matches,
+      config: snap.config
+    }).eq('id', activeTournament.id)
+    if (error) {
+      alert('Error undoing bracket edit: ' + error.message)
+      fetchData()
+    }
+  }
+
   const handleRemovePlayerFromBracket = async (playerId: string) => {
     if (!isAdmin) {
       alert(VIEW_ONLY_HINT)
@@ -740,6 +763,21 @@ function App() {
       ...activeTournament.config,
       players: activeTournament.config.players.filter(id => id !== playerId)
     }
+    const name = players[playerId]?.name || 'this player'
+    const ledger = applyPaidLedgerOnRemove({
+      playerId,
+      name,
+      tournamentId: activeTournament.id,
+      entryFee: getTournamentEntryFee(activeTournament.config),
+      owedBefore: playersOwedMap[playerId] || 0,
+      paidTonight,
+      refundsTonight,
+    })
+
+    snapshotBracketEdit(`Removed ${name}`)
+    setPaidTonight(ledger.paidTonight)
+    setRefundsTonight(ledger.refundsTonight)
+
     haptic('success')
     setActiveTournament(prev => prev ? { ...prev, matches: result.matches, config: updatedConfig } : null)
     setSwapSelection(null)
@@ -769,6 +807,8 @@ function App() {
       alert(result.error)
       return
     }
+    const name = players[player.playerId]?.name || 'player'
+    snapshotBracketEdit(`Swapped ${name} with a BYE`)
     haptic('success')
     setActiveTournament(prev => prev ? { ...prev, matches: result.matches } : null)
     setSwapSelection(null)
@@ -793,6 +833,7 @@ function App() {
 
     const existingPlayerId = match.player1Id || match.player2Id
     if (!existingPlayerId) return
+    setBracketEditUndo(null)
 
     const emptySlot = match.player1Id ? 'player2Id' : 'player1Id'
 
@@ -1183,6 +1224,7 @@ function App() {
       return
     }
     if (config.players.length < 2) return alert('Select at least 2 players')
+    setBracketEditUndo(null)
     
     // Deactivate any existing active tournaments first
     const { error: deactErr } = await supabase.from('tournaments').update({ is_active: false }).eq('is_active', true)
@@ -1223,6 +1265,7 @@ function App() {
     }
     const comingIds = Object.values(players).filter(p => p.status === 'coming').map(p => p.id);
     if (comingIds.length < 2) return alert('At least 2 players must be marked as "Coming" (green)');
+    setBracketEditUndo(null)
     
     const { error: deactErr } = await supabase.from('tournaments').update({ is_active: false }).eq('is_active', true)
     if (deactErr) {
@@ -1255,6 +1298,7 @@ function App() {
       alert(VIEW_ONLY_HINT)
       return
     }
+    setBracketEditUndo(null)
     const { data: tData, error: tFetchErr } = await supabase.from('tournaments').select('config').order('created_at', { ascending: false }).limit(1);
     if (tFetchErr) {
       alert('Error fetching last tournament: ' + tFetchErr.message)
@@ -1323,6 +1367,7 @@ function App() {
     if (!activeTournament) return
     const match = activeTournament.matches.find(m => m.id === matchId)
     if (!match || match.winnerId) return
+    setBracketEditUndo(null)
 
     const finalMatch = activeTournament.matches.find(m => m.nextMatchId === null && !m.isConsolation)
     const isSemifinal = finalMatch && match.nextMatchId === finalMatch.id
@@ -1578,6 +1623,7 @@ function App() {
     if (!activeTournament) return
     const finalMatch = activeTournament.matches.find(m => m.nextMatchId === null && !m.isConsolation)
     if (!finalMatch || !finalMatch.winnerId) return
+    setBracketEditUndo(null)
     
     const entryFee = getTournamentEntryFee(activeTournament.config)
     const totalPot = (activeTournament.config.players.length * entryFee)
@@ -1757,7 +1803,7 @@ function App() {
       }
 
       // 2. Rollback match losses from played matches in this tournament
-      const completedMatches = (tourney.matches || []).filter((m: Match) => m.winnerId && m.score !== 'BYE' && m.player1Id && m.player2Id)
+      const completedMatches = (tourney.matches || []).filter((m: Match) => isRealResult(m) && m.player1Id && m.player2Id)
       for (const m of completedMatches) {
         const loserId = m.winnerId === m.player1Id ? m.player2Id! : m.player1Id!
         if (players[loserId]) {
@@ -1791,6 +1837,7 @@ function App() {
       return
     }
     if (!activeTournament) return
+    setBracketEditUndo(null)
     const { error } = await supabase.from('tournaments').delete().eq('id', activeTournament.id)
     if (error) {
       alert('Error cancelling tournament: ' + error.message)
@@ -2126,7 +2173,7 @@ function App() {
               </div>
 
               {/* Tonight's Buy-in Ledger Card */}
-              {Object.values(playersOwedMap).some(owed => owed > 0) && (
+              {(Object.values(playersOwedMap).some(owed => owed > 0) || (isAdmin && refundsTonight.length > 0)) && (
                 <div className="card">
                   {(() => {
                     const totalPot = Object.values(playersOwedMap).reduce((sum, val) => sum + val, 0)
@@ -2157,6 +2204,38 @@ function App() {
                     <p style={{ fontSize: '0.65rem', opacity: 0.5, marginTop: '0.35rem', marginBottom: '0.5rem' }}>
                       <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}><Info size={12} color="var(--neon-amber)" /> Admin Tip: Tap a player to mark them as Paid.</span>
                     </p>
+                  )}
+
+                  {isAdmin && refundsTonight.length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.75rem' }}>
+                      {refundsTonight.map((r, idx) => (
+                        <div
+                          key={`${r.tournamentId}-${r.playerId}-${idx}`}
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            padding: '0.4rem 0.6rem',
+                            background: 'var(--chalk-slate-dark)',
+                            borderRadius: 'var(--radius-sm)',
+                            border: '1px solid var(--neon-amber)',
+                            gap: '0.5rem',
+                          }}
+                        >
+                          <span style={{ fontWeight: 600, fontSize: '0.85rem', minWidth: 0, flex: 1 }}>
+                            Refund {r.name} ${r.amount}
+                            <span style={{ display: 'block', fontSize: '0.65rem', opacity: 0.7, fontWeight: 600 }}>Removed from a bracket after they were marked paid</span>
+                          </span>
+                          <button
+                            className="btn btn-secondary"
+                            style={{ padding: '0.2rem 0.5rem', fontSize: '0.65rem', flexShrink: 0 }}
+                            onClick={() => setRefundsTonight(prev => prev.filter((_, i) => i !== idx))}
+                          >
+                            Done
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   )}
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', marginTop: '0.75rem' }}>
@@ -2507,12 +2586,50 @@ function App() {
                         Remove
                       </button>
                     )}
+                    {bracketEditUndo && (
+                      <button
+                        className="btn btn-secondary"
+                        style={{ padding: '0.35rem 0.6rem', fontSize: '0.65rem', borderRadius: '0.5rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
+                        onClick={handleUndoBracketEdit}
+                      >
+                        <RotateCcw size={13} />
+                        Undo
+                      </button>
+                    )}
                     <button 
                       className="btn btn-ghost" 
                       style={{ padding: '0.2rem 0.5rem', fontSize: '0.65rem', background: 'var(--chalk-slate-light)', color: 'var(--text-main)', borderRadius: '0.5rem' }} 
                       onClick={() => { setIsSwapMode(false); setSwapSelection(null); }}
                     >
                       Done
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {!isSwapMode && isAdmin && bracketEditUndo && (
+                <div className="bracket-swap-banner">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1, minWidth: 0 }}>
+                    <RotateCcw size={16} className="accent-text" style={{ flexShrink: 0 }} />
+                    <span style={{ fontWeight: 700, color: 'var(--text-main)', fontSize: '0.8rem', lineHeight: 1.3 }}>
+                      {bracketEditUndo.label}. You can undo this.
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexShrink: 0 }}>
+                    <button
+                      className="btn btn-secondary"
+                      style={{ padding: '0.35rem 0.6rem', fontSize: '0.65rem', borderRadius: '0.5rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
+                      onClick={handleUndoBracketEdit}
+                    >
+                      <RotateCcw size={13} />
+                      Undo
+                    </button>
+                    <button
+                      className="btn btn-ghost"
+                      style={{ padding: '0.2rem 0.5rem', fontSize: '0.65rem', background: 'var(--chalk-slate-light)', color: 'var(--text-main)', borderRadius: '0.5rem' }}
+                      onClick={() => setBracketEditUndo(null)}
+                    >
+                      Dismiss
                     </button>
                   </div>
                 </div>
@@ -3866,6 +3983,9 @@ function App() {
                 </div>
                 <p style={{ fontSize: '0.9rem', opacity: 0.8, marginBottom: '1.5rem', lineHeight: 1.5 }}>
                   Remove <strong>{players[confirmRemovePlayer.playerId]?.name || 'this player'}</strong> from the bracket? If their current match has not been played, their opponent will advance. Completed matches stay as they were.
+                  {paidTonight.includes(confirmRemovePlayer.playerId) && (
+                    <><br /><br />They were marked paid. Refund them ${getTournamentEntryFee(activeTournament?.config)} — their buy-in will come off tonight's ledger.</>
+                  )}
                 </p>
                 <div style={{ display: 'flex', gap: '0.75rem' }}>
                   <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setConfirmRemovePlayer(null)}>
