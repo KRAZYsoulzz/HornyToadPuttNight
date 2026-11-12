@@ -1,12 +1,12 @@
 import { useState, useEffect, useLayoutEffect, useMemo, useRef, type ReactNode } from 'react'
-import { Plus, Trophy, Trash2, ChevronRight, Settings2, User, Swords, History, UserPlus, ArrowLeft, LockOpen, Lock as LockIcon, QrCode, Coins, Percent, Edit2, Check, X, Shuffle, GitMerge, Sliders, AlertTriangle, Tv, Minimize2, ArrowLeftRight, MoreVertical, RotateCcw, Crown, Info, Palette, Sparkles, Crosshair, Maximize2 } from 'lucide-react'
+import { Plus, Trophy, Trash2, ChevronRight, Settings2, User, Swords, History, UserPlus, ArrowLeft, LockOpen, Lock as LockIcon, QrCode, Coins, Percent, Edit2, Check, X, Shuffle, GitMerge, Sliders, AlertTriangle, Tv, Minimize2, ArrowLeftRight, MoreVertical, RotateCcw, Crown, Info, Palette, Sparkles, Crosshair, Maximize2, UserMinus } from 'lucide-react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import SplitFlap from './components/SplitFlap'
 import Basket from './components/Basket'
 import WinnerReveal from './components/WinnerReveal'
 import { motionDurations } from './theme/motion'
 import { getTheme, setTheme, toggleTheme, getAnimations, setAnimations, THEMES, type Theme, type AnimationsSetting } from './theme/theme'
-import { generateBracket, calculatePayouts, getTournamentEntryFee, getTournamentPot, getTournamentLabel } from './logic/tournament'
+import { generateBracket, calculatePayouts, getTournamentEntryFee, getTournamentPot, getTournamentLabel, removePlayerFromBracket, swapPlayerWithBye } from './logic/tournament'
 import type { TournamentConfig, Player, Match } from './logic/tournament'
 import { supabase } from './lib/supabase'
 import { useAdmin } from './lib/auth'
@@ -203,6 +203,15 @@ function App() {
   const [confirmSwap, setConfirmSwap] = useState<{
     slotA: { matchId: string; slot: 'p1' | 'p2'; playerId: string }
     slotB: { matchId: string; slot: 'p1' | 'p2'; playerId: string }
+  } | null>(null)
+  const [confirmByeSwap, setConfirmByeSwap] = useState<{
+    player: { matchId: string; slot: 'p1' | 'p2'; playerId: string }
+    bye: { matchId: string; slot: 'p1' | 'p2' }
+  } | null>(null)
+  const [confirmRemovePlayer, setConfirmRemovePlayer] = useState<{
+    matchId: string
+    slot: 'p1' | 'p2'
+    playerId: string
   } | null>(null)
   const [showAddPlayerToByeModal, setShowAddPlayerToByeModal] = useState(false)
   const [selectedByeMatchId, setSelectedByeMatchId] = useState<string | null>(null)
@@ -712,6 +721,62 @@ function App() {
     const { error } = await supabase.from('tournaments').update({ matches: updatedMatches }).eq('id', activeTournament.id)
     if (error) {
       alert('Error saving player swap: ' + error.message)
+      fetchData()
+    }
+  }
+
+  const handleRemovePlayerFromBracket = async (playerId: string) => {
+    if (!isAdmin) {
+      alert(VIEW_ONLY_HINT)
+      return
+    }
+    if (!activeTournament) return
+    const result = removePlayerFromBracket(activeTournament.matches, playerId)
+    if (!result.ok) {
+      alert(result.error)
+      return
+    }
+    const updatedConfig = {
+      ...activeTournament.config,
+      players: activeTournament.config.players.filter(id => id !== playerId)
+    }
+    haptic('success')
+    setActiveTournament(prev => prev ? { ...prev, matches: result.matches, config: updatedConfig } : null)
+    setSwapSelection(null)
+    setConfirmRemovePlayer(null)
+
+    const { error } = await supabase.from('tournaments').update({
+      matches: result.matches,
+      config: updatedConfig
+    }).eq('id', activeTournament.id)
+    if (error) {
+      alert('Error removing player: ' + error.message)
+      fetchData()
+    }
+  }
+
+  const handleSwapPlayerWithBye = async (
+    player: { matchId: string; slot: 'p1' | 'p2'; playerId: string },
+    bye: { matchId: string; slot: 'p1' | 'p2' }
+  ) => {
+    if (!isAdmin) {
+      alert(VIEW_ONLY_HINT)
+      return
+    }
+    if (!activeTournament) return
+    const result = swapPlayerWithBye(activeTournament.matches, player, bye)
+    if (!result.ok) {
+      alert(result.error)
+      return
+    }
+    haptic('success')
+    setActiveTournament(prev => prev ? { ...prev, matches: result.matches } : null)
+    setSwapSelection(null)
+    setConfirmByeSwap(null)
+
+    const { error } = await supabase.from('tournaments').update({ matches: result.matches }).eq('id', activeTournament.id)
+    if (error) {
+      alert('Error swapping with BYE: ' + error.message)
       fetchData()
     }
   }
@@ -1780,22 +1845,42 @@ function App() {
     const isP1AvailableBye = match.round === 1 && !match.player1Id && match.score === 'BYE' && !isPast && isAdmin && nextRoundHasNotPlayed
     const isP2AvailableBye = match.round === 1 && !match.player2Id && match.score === 'BYE' && !isPast && isAdmin && nextRoundHasNotPlayed
 
+    const isByeSlot = (slot: 'p1' | 'p2') => {
+      const id = slot === 'p1' ? match.player1Id : match.player2Id
+      return match.round === 1 && !id && match.score === 'BYE' && !isPast && nextRoundHasNotPlayed
+    }
+
     const handleSlotClick = (slot: 'p1' | 'p2', playerId: string | null) => {
-      if (!isPast && !tourneyHasStarted && isAdmin && isSwapMode && playerId && match.round === 1) {
-        if (!swapSelection) {
+      if (!isPast && isAdmin && isSwapMode) {
+        if (playerId) {
+          if (!swapSelection) {
+            setSwapSelection({ matchId: match.id, slot, playerId })
+            haptic('light')
+            return
+          }
+          if (swapSelection.matchId === match.id && swapSelection.slot === slot) {
+            setSwapSelection(null)
+            haptic('light')
+            return
+          }
+          if (!tourneyHasStarted && match.round === 1 && swapSelection.playerId) {
+            setConfirmSwap({
+              slotA: swapSelection,
+              slotB: { matchId: match.id, slot, playerId }
+            })
+            return
+          }
           setSwapSelection({ matchId: match.id, slot, playerId })
           haptic('light')
           return
         }
-        if (swapSelection.matchId === match.id && swapSelection.slot === slot) {
-          setSwapSelection(null)
-          haptic('light')
+        if (isByeSlot(slot) && swapSelection?.playerId) {
+          setConfirmByeSwap({
+            player: swapSelection,
+            bye: { matchId: match.id, slot }
+          })
           return
         }
-        setConfirmSwap({
-          slotA: swapSelection,
-          slotB: { matchId: match.id, slot, playerId }
-        })
         return
       }
 
@@ -1812,13 +1897,18 @@ function App() {
             style={{
               ...getHeatStyle(match.player1Id),
               ...(isP1SwapSelected ? { outline: '2px solid var(--neon-amber)', boxShadow: 'var(--neon-amber-box-glow)', background: 'var(--chalk-slate-light)' } : {}),
-              ...(isP1AvailableBye ? { cursor: 'pointer' } : {})
+              ...(isP1AvailableBye ? { cursor: 'pointer' } : {}),
+              ...(isSwapMode && isP1AvailableBye && swapSelection ? { outline: '2px dashed var(--neon-amber)' } : {})
             }}
             onMouseDown={startPress}
             onMouseUp={endPress}
             onTouchStart={startPress}
             onTouchEnd={endPress}
             onClick={() => {
+              if (isSwapMode && isAdmin && !isPast) {
+                handleSlotClick('p1', match.player1Id)
+                return
+              }
               if (isP1AvailableBye) {
                 setSelectedByeMatchId(match.id)
                 setShowAddPlayerToByeModal(true)
@@ -1855,13 +1945,18 @@ function App() {
             style={{
               ...getHeatStyle(match.player2Id),
               ...(isP2SwapSelected ? { outline: '2px solid var(--neon-amber)', boxShadow: 'var(--neon-amber-box-glow)', background: 'var(--chalk-slate-light)' } : {}),
-              ...(isP2AvailableBye ? { cursor: 'pointer' } : {})
+              ...(isP2AvailableBye ? { cursor: 'pointer' } : {}),
+              ...(isSwapMode && isP2AvailableBye && swapSelection ? { outline: '2px dashed var(--neon-amber)' } : {})
             }}
             onMouseDown={startPress}
             onMouseUp={endPress}
             onTouchStart={startPress}
             onTouchEnd={endPress}
             onClick={() => {
+              if (isSwapMode && isAdmin && !isPast) {
+                handleSlotClick('p2', match.player2Id)
+                return
+              }
               if (isP2AvailableBye) {
                 setSelectedByeMatchId(match.id)
                 setShowAddPlayerToByeModal(true)
@@ -2283,7 +2378,7 @@ function App() {
                       >FINISH</button>
                     )}
 
-                    {isAdmin && !tourneyHasStarted && (
+                    {isAdmin && (
                       <button 
                         className="btn btn-secondary bracket-circle-btn" 
                         onClick={() => {
@@ -2295,7 +2390,7 @@ function App() {
                           background: isSwapMode ? 'rgba(245, 158, 11, 0.25)' : undefined, 
                           border: isSwapMode ? '1.5px solid var(--accent)' : undefined 
                         }} 
-                        title={isSwapMode ? "Cancel Matchup Swap" : "Swap Starting Matchups"}
+                        title={isSwapMode ? "Done editing bracket" : "Edit bracket (remove player or change a bye)"}
                       >
                         <ArrowLeftRight size={18} className="accent-text" />
                       </button>
@@ -2388,24 +2483,38 @@ function App() {
                 </div>
               </div>
 
-              {/* Pre-start Matchup Swap Floating Helper Banner */}
-              {isSwapMode && !tourneyHasStarted && (
+              {/* Bracket edit helper banner (directors only) */}
+              {isSwapMode && isAdmin && (
                 <div className="bracket-swap-banner">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <ArrowLeftRight size={16} className="accent-text" />
-                    <span style={{ fontWeight: 700, color: 'var(--text-main)' }}>
-                      {swapSelection 
-                        ? `Selected: ${players[swapSelection.playerId]?.name || 'Player'} — Tap another player to swap` 
-                        : 'Tap any player in Round 1 to select'}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1, minWidth: 0 }}>
+                    <ArrowLeftRight size={16} className="accent-text" style={{ flexShrink: 0 }} />
+                    <span style={{ fontWeight: 700, color: 'var(--text-main)', fontSize: '0.8rem', lineHeight: 1.3 }}>
+                      {swapSelection
+                        ? `Selected: ${players[swapSelection.playerId]?.name || 'Player'} — Tap a BYE to swap, or remove them`
+                        : (tourneyHasStarted
+                          ? 'Tap a player to remove them, or tap a player then a BYE to change who gets the bye'
+                          : 'Tap a player, then another player or a BYE to swap. Or select a player to remove.')}
                     </span>
                   </div>
-                  <button 
-                    className="btn btn-ghost" 
-                    style={{ padding: '0.2rem 0.5rem', fontSize: '0.65rem', background: 'var(--chalk-slate-light)', color: 'var(--text-main)', borderRadius: '0.5rem' }} 
-                    onClick={() => { setIsSwapMode(false); setSwapSelection(null); }}
-                  >
-                    Done
-                  </button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexShrink: 0 }}>
+                    {swapSelection && (
+                      <button
+                        className="btn"
+                        style={{ padding: '0.35rem 0.6rem', fontSize: '0.65rem', background: 'var(--danger, #b91c1c)', color: '#fff', borderRadius: '0.5rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
+                        onClick={() => setConfirmRemovePlayer(swapSelection)}
+                      >
+                        <UserMinus size={13} />
+                        Remove
+                      </button>
+                    )}
+                    <button 
+                      className="btn btn-ghost" 
+                      style={{ padding: '0.2rem 0.5rem', fontSize: '0.65rem', background: 'var(--chalk-slate-light)', color: 'var(--text-main)', borderRadius: '0.5rem' }} 
+                      onClick={() => { setIsSwapMode(false); setSwapSelection(null); }}
+                    >
+                      Done
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -3710,6 +3819,64 @@ function App() {
                     }}
                   >
                     Confirm Swap
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Confirm swap player with BYE */}
+          {confirmByeSwap && (
+            <motion.div className="modal-overlay" onClick={() => setConfirmByeSwap(null)}>
+              <div className="modal-content" onClick={e => e.stopPropagation()}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+                  <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'var(--chalk-slate-dark)', border: '1px solid var(--chalk-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <ArrowLeftRight size={20} color="var(--secondary)" />
+                  </div>
+                  <h3 className="card-title" style={{ margin: 0 }}>Swap with BYE?</h3>
+                </div>
+                <p style={{ fontSize: '0.9rem', opacity: 0.8, marginBottom: '1.5rem', lineHeight: 1.5 }}>
+                  Move <strong>{players[confirmByeSwap.player.playerId]?.name || 'this player'}</strong> into that BYE slot? Their old match becomes a bye, and auto-advances will update.
+                </p>
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                  <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setConfirmByeSwap(null)}>
+                    Cancel
+                  </button>
+                  <button
+                    className="btn btn-primary"
+                    style={{ flex: 1 }}
+                    onClick={() => handleSwapPlayerWithBye(confirmByeSwap.player, confirmByeSwap.bye)}
+                  >
+                    Confirm Swap
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Confirm remove player from bracket */}
+          {confirmRemovePlayer && (
+            <motion.div className="modal-overlay" onClick={() => setConfirmRemovePlayer(null)}>
+              <div className="modal-content" onClick={e => e.stopPropagation()}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+                  <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'var(--chalk-slate-dark)', border: '1px solid var(--chalk-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <UserMinus size={20} color="var(--secondary)" />
+                  </div>
+                  <h3 className="card-title" style={{ margin: 0 }}>Remove Player?</h3>
+                </div>
+                <p style={{ fontSize: '0.9rem', opacity: 0.8, marginBottom: '1.5rem', lineHeight: 1.5 }}>
+                  Remove <strong>{players[confirmRemovePlayer.playerId]?.name || 'this player'}</strong> from the bracket? If their current match has not been played, their opponent will advance. Completed matches stay as they were.
+                </p>
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                  <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setConfirmRemovePlayer(null)}>
+                    Cancel
+                  </button>
+                  <button
+                    className="btn btn-primary"
+                    style={{ flex: 1, background: 'var(--danger, #b91c1c)' }}
+                    onClick={() => handleRemovePlayerFromBracket(confirmRemovePlayer.playerId)}
+                  >
+                    Yes, Remove
                   </button>
                 </div>
               </div>

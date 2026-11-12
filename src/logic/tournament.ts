@@ -254,3 +254,189 @@ export function getTournamentLabel(
   return `${dateDisplay} $${fee} Bracket #${bracketNum}`;
 }
 
+
+/** A completed match with a real score, not an auto-bye or walkover. */
+export function isRealResult(match: Match): boolean {
+  return match.winnerId != null && match.score != null && match.score !== 'BYE' && match.score !== 'WO'
+}
+
+export type BracketSlotRef = {
+  matchId: string
+  slot: 'p1' | 'p2'
+}
+
+export type BracketEditResult =
+  | { ok: true; matches: Match[] }
+  | { ok: false; error: string }
+
+function cloneMatches(matches: Match[]): Match[] {
+  return matches.map(m => ({ ...m }))
+}
+
+function getSlot(match: Match, slot: 'p1' | 'p2'): string | null {
+  return slot === 'p1' ? match.player1Id : match.player2Id
+}
+
+function setSlot(match: Match, slot: 'p1' | 'p2', playerId: string | null): void {
+  if (slot === 'p1') match.player1Id = playerId
+  else match.player2Id = playerId
+}
+
+function nextSlotField(match: Match): 'player1Id' | 'player2Id' {
+  return match.order % 2 === 0 ? 'player1Id' : 'player2Id'
+}
+
+function findMatch(matches: Match[], id: string | null | undefined): Match | undefined {
+  if (!id) return undefined
+  return matches.find(m => m.id === id)
+}
+
+function nextIsUnplayed(matches: Match[], match: Match): boolean {
+  const next = findMatch(matches, match.nextMatchId)
+  return !next || !isRealResult(next)
+}
+
+function clearPlayerDownstream(matches: Match[], from: Match, playerId: string): void {
+  let current: Match | undefined = from
+  while (current?.nextMatchId) {
+    const next = findMatch(matches, current.nextMatchId)
+    if (!next || isRealResult(next)) break
+    if (next.player1Id === playerId) next.player1Id = null
+    if (next.player2Id === playerId) next.player2Id = null
+    if (next.winnerId === playerId) {
+      next.winnerId = null
+      if (next.score === 'BYE' || next.score === 'WO') next.score = null
+    }
+    current = next
+  }
+}
+
+function placeWinnerInNext(matches: Match[], from: Match, winnerId: string): void {
+  const next = findMatch(matches, from.nextMatchId)
+  if (!next || isRealResult(next)) return
+  next[nextSlotField(from)] = winnerId
+}
+
+function applySinglePlayerBye(match: Match): void {
+  const only = match.player1Id && !match.player2Id
+    ? match.player1Id
+    : !match.player1Id && match.player2Id
+      ? match.player2Id
+      : null
+  if (only) {
+    match.winnerId = only
+    match.score = 'BYE'
+  } else {
+    match.winnerId = null
+    match.score = null
+  }
+}
+
+/**
+ * Remove a player from their current unplayed match.
+ * Round 1: their slot becomes a BYE and the opponent auto-advances.
+ * Later rounds: the opponent gets a walkover (score WO) and advances.
+ * Real completed results are left alone.
+ */
+export function removePlayerFromBracket(matches: Match[], playerId: string): BracketEditResult {
+  if (!playerId) return { ok: false, error: 'No player selected' }
+  const next = cloneMatches(matches)
+  const occupied = next.filter(m => m.player1Id === playerId || m.player2Id === playerId)
+  if (occupied.length === 0) return { ok: false, error: 'That player is not in this bracket' }
+
+  const editable = occupied.filter(m => !isRealResult(m))
+  if (editable.length === 0) {
+    return { ok: false, error: 'This player already has a completed match, so they cannot be removed.' }
+  }
+
+  const current = [...editable].sort((a, b) => b.round - a.round || Number(!!b.isConsolation) - Number(!!a.isConsolation))[0]
+
+  if (!nextIsUnplayed(next, current) && current.nextMatchId) {
+    return { ok: false, error: 'The next-round match has already been played, so this player cannot be removed.' }
+  }
+
+  const opponentId = current.player1Id === playerId ? current.player2Id : current.player1Id
+
+  clearPlayerDownstream(next, current, playerId)
+  if (current.player1Id === playerId) current.player1Id = null
+  else current.player2Id = null
+
+  if (current.round === 1) {
+    applySinglePlayerBye(current)
+    if (current.score === 'BYE' && current.winnerId) {
+      placeWinnerInNext(next, current, current.winnerId)
+    }
+  } else if (opponentId) {
+    current.winnerId = opponentId
+    current.score = 'WO'
+    placeWinnerInNext(next, current, opponentId)
+  } else {
+    current.winnerId = null
+    current.score = null
+  }
+
+  for (const m of next) {
+    if (m.id === current.id) continue
+    if (isRealResult(m)) continue
+    if (m.player1Id !== playerId && m.player2Id !== playerId && m.winnerId !== playerId) continue
+    if (m.player1Id === playerId) m.player1Id = null
+    if (m.player2Id === playerId) m.player2Id = null
+    applySinglePlayerBye(m)
+  }
+
+  return { ok: true, matches: next }
+}
+
+/**
+ * Trade a first-round player with an empty BYE slot so a different player gets the bye.
+ * Both first-round matches must be unplayed (BYE auto-advances are ok) and their next
+ * matches must not have a real result. Re-resolves auto-advances after the swap.
+ */
+export function swapPlayerWithBye(
+  matches: Match[],
+  playerSlot: BracketSlotRef,
+  byeSlot: BracketSlotRef
+): BracketEditResult {
+  const next = cloneMatches(matches)
+  const playerMatch = findMatch(next, playerSlot.matchId)
+  const byeMatch = findMatch(next, byeSlot.matchId)
+  if (!playerMatch || !byeMatch) return { ok: false, error: 'Could not find those bracket slots' }
+  if (playerMatch.round !== 1 || byeMatch.round !== 1) {
+    return { ok: false, error: 'You can only swap a player with a BYE in Round 1' }
+  }
+  if (playerMatch.id === byeMatch.id) {
+    return { ok: false, error: 'Pick a BYE in a different match' }
+  }
+  if (isRealResult(playerMatch) || isRealResult(byeMatch)) {
+    return { ok: false, error: 'You can only swap unplayed first-round matches' }
+  }
+  if (!nextIsUnplayed(next, playerMatch) || !nextIsUnplayed(next, byeMatch)) {
+    return { ok: false, error: 'The next-round match has already been played' }
+  }
+
+  const playerId = getSlot(playerMatch, playerSlot.slot)
+  const byeOccupant = getSlot(byeMatch, byeSlot.slot)
+  if (!playerId) return { ok: false, error: 'Select a player to swap' }
+  if (byeOccupant) return { ok: false, error: 'That slot is not a BYE' }
+
+  const prevPlayerWinner = playerMatch.score === 'BYE' ? playerMatch.winnerId : null
+  const prevByeWinner = byeMatch.score === 'BYE' ? byeMatch.winnerId : null
+
+  setSlot(byeMatch, byeSlot.slot, playerId)
+  setSlot(playerMatch, playerSlot.slot, null)
+
+  const resolve = (m: Match, prevWinner: string | null) => {
+    applySinglePlayerBye(m)
+    const nxt = findMatch(next, m.nextMatchId)
+    if (!nxt || isRealResult(nxt)) return
+    const field = nextSlotField(m)
+    if (prevWinner && nxt[field] === prevWinner) nxt[field] = null
+    if (nxt[field] === playerId && m.winnerId !== playerId) nxt[field] = null
+    if (m.score === 'BYE' && m.winnerId) nxt[field] = m.winnerId
+  }
+
+  resolve(playerMatch, prevPlayerWinner)
+  resolve(byeMatch, prevByeWinner)
+
+  return { ok: true, matches: next }
+}
