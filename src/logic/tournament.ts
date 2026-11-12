@@ -255,7 +255,12 @@ export function getTournamentLabel(
 }
 
 
-/** A completed match with a real score, not an auto-bye or walkover. */
+/**
+ * A completed match with a real score, not an auto-bye or walkover.
+ * Walkovers (score 'WO') are administrative — they must not count toward
+ * player wins, losses, history, or earnings. Tournament payout still happens
+ * only when a director finishes the bracket.
+ */
 export function isRealResult(match: Match): boolean {
   return match.winnerId != null && match.score != null && match.score !== 'BYE' && match.score !== 'WO'
 }
