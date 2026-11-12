@@ -445,3 +445,126 @@ export function swapPlayerWithBye(
 
   return { ok: true, matches: next }
 }
+
+
+export type RefundNotice = {
+  playerId: string
+  name: string
+  amount: number
+  tournamentId: string
+}
+
+export type BracketEditSnapshot = {
+  matches: Match[]
+  config: TournamentConfig
+  paidTonight: string[]
+  refundsTonight: RefundNotice[]
+  label: string
+}
+
+export function createBracketEditSnapshot(input: BracketEditSnapshot): BracketEditSnapshot {
+  return {
+    matches: input.matches.map(m => ({ ...m })),
+    config: { ...input.config, players: [...input.config.players] },
+    paidTonight: [...input.paidTonight],
+    refundsTonight: input.refundsTonight.map(r => ({ ...r })),
+    label: input.label,
+  }
+}
+
+/**
+ * After a player is removed from one tournament, adjust tonight's paid mark
+ * and add a refund flag if they had already been marked paid.
+ * owedBefore should include this tournament's fee.
+ */
+export function applyPaidLedgerOnRemove(input: {
+  playerId: string
+  name: string
+  tournamentId: string
+  entryFee: number
+  owedBefore: number
+  paidTonight: string[]
+  refundsTonight: RefundNotice[]
+}): { paidTonight: string[]; refundsTonight: RefundNotice[]; refundDue: number } {
+  const owedAfter = Math.max(0, input.owedBefore - input.entryFee)
+  const wasPaid = input.paidTonight.includes(input.playerId)
+  if (!wasPaid) {
+    return {
+      paidTonight: [...input.paidTonight],
+      refundsTonight: input.refundsTonight.map(r => ({ ...r })),
+      refundDue: 0,
+    }
+  }
+
+  const paidTonight = owedAfter === 0
+    ? input.paidTonight.filter(id => id !== input.playerId)
+    : [...input.paidTonight]
+
+  const alreadyFlagged = input.refundsTonight.some(
+    r => r.playerId === input.playerId && r.tournamentId === input.tournamentId
+  )
+  const refundsTonight = alreadyFlagged
+    ? input.refundsTonight.map(r => ({ ...r }))
+    : [
+        ...input.refundsTonight.map(r => ({ ...r })),
+        {
+          playerId: input.playerId,
+          name: input.name,
+          amount: input.entryFee,
+          tournamentId: input.tournamentId,
+        },
+      ]
+
+  return { paidTonight, refundsTonight, refundDue: input.entryFee }
+}
+
+function isSameLocalDay(timestamp: number, now: Date): boolean {
+  const date = new Date(timestamp)
+  return (
+    date.getDate() === now.getDate() &&
+    date.getMonth() === now.getMonth() &&
+    date.getFullYear() === now.getFullYear()
+  )
+}
+
+function isCompletedTournament(matches?: Match[]): boolean {
+  if (!matches) return false
+  const finalMatch = matches.find(m => m.nextMatchId === null && !m.isConsolation)
+  return !!(finalMatch && finalMatch.winnerId !== null)
+}
+
+/** Sum tonight's entry fees for each player across today's active or completed brackets. */
+export function computePlayersOwed(
+  knownPlayerIds: string[],
+  tournaments: Array<{
+    id: string
+    config: TournamentConfig
+    matches?: Match[]
+    isActive?: boolean
+  }>,
+  activeTournamentId: string | null,
+  now = new Date()
+): Record<string, number> {
+  const owed: Record<string, number> = {}
+  knownPlayerIds.forEach(id => { owed[id] = 0 })
+
+  for (const t of tournaments) {
+    const timestamp = parseInt(t.id)
+    if (isNaN(timestamp) || !isSameLocalDay(timestamp, now)) continue
+
+    const isCurrentlyActive = !!activeTournamentId && activeTournamentId === t.id
+    if (!isCurrentlyActive && !isCompletedTournament(t.matches)) continue
+
+    const entryFee = getTournamentEntryFee(t.config)
+    const uniquePlayerIds = Array.from(new Set(t.config.players || []))
+    uniquePlayerIds.forEach(pId => {
+      owed[pId] = (owed[pId] || 0) + entryFee
+    })
+  }
+
+  return owed
+}
+
+export function remainingOwedAfterRemoval(owedBefore: number, entryFee: number): number {
+  return Math.max(0, owedBefore - entryFee)
+}

@@ -6,7 +6,7 @@ import Basket from './components/Basket'
 import WinnerReveal from './components/WinnerReveal'
 import { motionDurations } from './theme/motion'
 import { getTheme, setTheme, toggleTheme, getAnimations, setAnimations, THEMES, type Theme, type AnimationsSetting } from './theme/theme'
-import { generateBracket, calculatePayouts, getTournamentEntryFee, getTournamentPot, getTournamentLabel, removePlayerFromBracket, swapPlayerWithBye, isRealResult } from './logic/tournament'
+import { generateBracket, calculatePayouts, getTournamentEntryFee, getTournamentPot, getTournamentLabel, removePlayerFromBracket, swapPlayerWithBye, isRealResult, applyPaidLedgerOnRemove, computePlayersOwed, createBracketEditSnapshot, type RefundNotice, type BracketEditSnapshot } from './logic/tournament'
 import type { TournamentConfig, Player, Match } from './logic/tournament'
 import { supabase } from './lib/supabase'
 import { useAdmin } from './lib/auth'
@@ -395,7 +395,6 @@ function App() {
     localStorage.setItem('puttNightPaidTonight', JSON.stringify(paidTonight))
   }, [paidTonight])
 
-  type RefundNotice = { playerId: string; name: string; amount: number; tournamentId: string }
   const [refundsTonight, setRefundsTonight] = useState<RefundNotice[]>(() => {
     try {
       const storedDate = localStorage.getItem('puttNightPaidDate')
@@ -412,23 +411,17 @@ function App() {
     localStorage.setItem('puttNightRefundsTonight', JSON.stringify(refundsTonight))
   }, [refundsTonight])
 
-  const [bracketEditUndo, setBracketEditUndo] = useState<{
-    matches: Match[]
-    config: TournamentConfig
-    paidTonight: string[]
-    refundsTonight: RefundNotice[]
-    label: string
-  } | null>(null)
+  const [bracketEditUndo, setBracketEditUndo] = useState<BracketEditSnapshot | null>(null)
 
   const snapshotBracketEdit = (label: string) => {
     if (!activeTournament) return
-    setBracketEditUndo({
-      matches: activeTournament.matches.map(m => ({ ...m })),
-      config: { ...activeTournament.config, players: [...activeTournament.config.players] },
-      paidTonight: [...paidTonight],
-      refundsTonight: refundsTonight.map(r => ({ ...r })),
+    setBracketEditUndo(createBracketEditSnapshot({
+      matches: activeTournament.matches,
+      config: activeTournament.config,
+      paidTonight,
+      refundsTonight,
       label,
-    })
+    }))
   }
 
   const togglePaidStatus = (pId: string) => {
@@ -615,44 +608,11 @@ function App() {
   }
 
   const playersOwedMap = useMemo(() => {
-    const owed: Record<string, number> = {}
-    
-    // Initialize active/known players to 0
-    Object.keys(players).forEach(id => {
-      owed[id] = 0
-    })
-
-    const countTourney = (t: { config: TournamentConfig; id: string; matches?: any[] }) => {
-      const timestamp = parseInt(t.id)
-      if (isNaN(timestamp) || !isToday(timestamp)) return
-
-      // Only count if it is currently the active tournament OR a completed tournament (final match has a winner)
-      const isCurrentlyActive = activeTournament && activeTournament.id === t.id
-      const finalMatch = t.matches?.find((m: any) => m.nextMatchId === null && !m.isConsolation)
-      const isCompleted = finalMatch && finalMatch.winnerId !== null
-
-      if (!isCurrentlyActive && !isCompleted) return
-
-      const entryFee = getTournamentEntryFee(t.config)
-      const uniquePlayerIds = Array.from(new Set(t.config.players || []))
-      uniquePlayerIds.forEach(pId => {
-        if (owed[pId] !== undefined) {
-          owed[pId] += entryFee
-        } else {
-          owed[pId] = entryFee
-        }
-      })
-    }
-
-    if (activeTournament) {
-      countTourney(activeTournament)
-    }
-
-    pastTournaments.forEach(t => {
-      countTourney(t)
-    })
-
-    return owed
+    const tourneys = [
+      ...(activeTournament ? [activeTournament] : []),
+      ...pastTournaments,
+    ]
+    return computePlayersOwed(Object.keys(players), tourneys, activeTournament?.id ?? null)
   }, [players, activeTournament, pastTournaments])
 
   const tourneyHasStarted = useMemo(() => {
@@ -803,22 +763,20 @@ function App() {
       ...activeTournament.config,
       players: activeTournament.config.players.filter(id => id !== playerId)
     }
-    const fee = getTournamentEntryFee(activeTournament.config)
     const name = players[playerId]?.name || 'this player'
-    const wasPaid = paidTonight.includes(playerId)
-    const owedAfter = Math.max(0, (playersOwedMap[playerId] || 0) - fee)
+    const ledger = applyPaidLedgerOnRemove({
+      playerId,
+      name,
+      tournamentId: activeTournament.id,
+      entryFee: getTournamentEntryFee(activeTournament.config),
+      owedBefore: playersOwedMap[playerId] || 0,
+      paidTonight,
+      refundsTonight,
+    })
 
     snapshotBracketEdit(`Removed ${name}`)
-
-    if (wasPaid) {
-      if (owedAfter === 0) {
-        setPaidTonight(prev => prev.filter(id => id !== playerId))
-      }
-      setRefundsTonight(prev => {
-        if (prev.some(r => r.playerId === playerId && r.tournamentId === activeTournament.id)) return prev
-        return [...prev, { playerId, name, amount: fee, tournamentId: activeTournament.id }]
-      })
-    }
+    setPaidTonight(ledger.paidTonight)
+    setRefundsTonight(ledger.refundsTonight)
 
     haptic('success')
     setActiveTournament(prev => prev ? { ...prev, matches: result.matches, config: updatedConfig } : null)
